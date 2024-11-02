@@ -1,0 +1,12 @@
+appId: net.linkfuture.cloudstorageclient
+productName: Cloud Storage Client
+copyright: Copyright © 2024 LinkFuture
+directories:
+  output: dist
+  buildResources: resources
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+publish: null
