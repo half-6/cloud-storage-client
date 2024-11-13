@@ -6,6 +6,7 @@ const progress = require("progress-stream");
 
 function getClient(store: AWSS3StorageInfo) {
   return new S3Client({
+    endpoint: store.endpoint || null,
     region: store.region,
     credentials: {
       accessKeyId: store.accessKeyId,
@@ -59,16 +60,10 @@ export async function downloadFileToStream(
 //region downloadInChunks
 //reference https://docs.aws.amazon.com/AmazonS3/latest/API/s3_example_s3_Scenario_UsingLargeFiles_section.html
 const isComplete = ({ end, length }) => end === length - 1;
-async function getObjectRange(
-  store: AWSS3StorageInfo,
-  bucketName: string,
-  file: FileInfo,
-  start: number,
-  end: number,
-) {
-  const client = getClient(store);
+async function getObjectRange(file: FileInfo, start: number, end: number) {
+  const client = getClient(file.storage as AWSS3StorageInfo);
   const command = new GetObjectCommand({
-    Bucket: bucketName,
+    Bucket: file.bucket.name,
     Key: file.path,
     Range: `bytes=${start}-${end}`,
   });
@@ -86,14 +81,11 @@ const getRangeAndLength = (contentRange) => {
   };
 };
 export async function downloadFileInChunks(
-  store: AWSS3StorageInfo,
-  bucketName: string,
   file: FileInfo,
   outputFilePath: string,
   onProgress: (progress) => void,
 ) {
   const writeStream = fs.createWriteStream(outputFilePath);
-  writeStream.on("error", (err) => console.error(err));
 
   let rangeAndLength = { start: -1, end: -1, length: -1 };
 
@@ -102,8 +94,6 @@ export async function downloadFileInChunks(
     const nextRange = { start: end + 1, end: end + oneMB };
 
     const { ContentRange, Body } = await getObjectRange(
-      store,
-      bucketName,
       file,
       nextRange.start,
       nextRange.end,

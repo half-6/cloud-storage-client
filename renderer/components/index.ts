@@ -1,5 +1,5 @@
 export * from "./BucketListDrawer";
-export * from "./AWSS3StoragePanel";
+export * from "./StoragePanel";
 export * from "./Header";
 export * from "./FileBrowser";
 export * from "./Alert";
@@ -12,3 +12,6 @@ export * from "./Button";
 export * from "./AWSS3BucketDialog";
 export * from "./BucketListNav";
 export * from "./Layout";
+export * from "./TabPanel";
+export * from "./AWSS3StorageForm";
+export * from "./AWSS3CompatibleStorageForm";

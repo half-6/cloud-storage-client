@@ -25,7 +25,7 @@ import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import FileCopyOutlinedIcon from "@mui/icons-material/FileCopyOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import { AWSS3BucketDialog } from "./AWSS3BucketDialog";
-import { AWSS3StoragePanel } from "./AWSS3StoragePanel";
+import { StoragePanel } from "./StoragePanel";
 import { useAlertStore, useSystemStore } from "../store";
 import CreateNewFolderOutlinedIcon from "@mui/icons-material/CreateNewFolderOutlined";
 
@@ -336,7 +336,7 @@ export const AccountListNav = (props: AccountListNavProps) => {
           <ListItemText>Delete Bucket</ListItemText>
         </MenuItem>
       </Menu>
-      <AWSS3StoragePanel
+      <StoragePanel
         open={showStorageDialog}
         storage={selectedStorageMenu?.storage as AWSS3StorageInfo}
         onSave={(storage) => {

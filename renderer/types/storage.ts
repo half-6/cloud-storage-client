@@ -1,23 +1,41 @@
 import { FileTypeInfo, S3PermissionInfo } from "./";
+import { BucketLocationConstraint } from "@aws-sdk/client-s3/";
+
+export enum StorageType {
+  AWSS3,
+  AWSS3COMPATIBLE,
+  GoogleCloudStorage,
+}
 
 export interface StorageInfo {
   id: string;
   name: string; //display name
-  icon: string; //display icon
+  type: StorageType;
 }
 
 export interface AWSS3StorageInfo extends StorageInfo {
   region: string;
   accessKeyId: string;
+  endpoint?: string;
   secretAccessKey: string;
 }
+export interface GoogleCloudStorageInfo extends StorageInfo {
+  region: string;
+  endpoint: string;
+  accessKeyId: string;
+  secretAccessKey: string;
+}
+
 export interface BucketInfo {
   name: string;
-  region: RegionInfo;
+  region?: BucketLocationConstraint;
   createDate: Date;
 }
+
 export interface FileInfo {
   name: string;
+  storage: StorageInfo;
+  bucket: BucketInfo;
   lastModify: Date;
   size?: number;
   path: string;
@@ -44,35 +62,4 @@ export interface TagInfo {
   value: string;
 }
 
-export const RegionInfoList = [
-  "af-south-1",
-  "ap-east-1",
-  "ap-northeast-1",
-  "ap-northeast-2",
-  "ap-northeast-3",
-  "ap-south-1",
-  "ap-south-2",
-  "ap-southeast-1",
-  "ap-southeast-2",
-  "ap-southeast-3",
-  "ca-central-1",
-  "cn-north-1",
-  "cn-northwest-1",
-  "EU",
-  "eu-central-1",
-  "eu-north-1",
-  "eu-south-1",
-  "eu-south-2",
-  "eu-west-1",
-  "eu-west-2",
-  "eu-west-3",
-  "me-south-1",
-  "sa-east-1",
-  "us-east-1",
-  "us-east-2",
-  "us-gov-east-1",
-  "us-gov-west-1",
-  "us-west-1",
-  "us-west-2",
-];
-export type RegionInfo = (typeof RegionInfoList)[number];
+export const RegionInfoList = Object.values(BucketLocationConstraint);

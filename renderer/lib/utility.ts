@@ -20,6 +20,17 @@ export function getFileExtension(fileName: string) {
   }
   return extension;
 }
+
+export function replaceFromEnd(str, search, replace) {
+  const lastIndex = str.lastIndexOf(search);
+  if (lastIndex !== -1) {
+    return (
+      str.slice(0, lastIndex) + replace + str.slice(lastIndex + search.length)
+    );
+  }
+  return str;
+}
+
 export function formatFileSize(bytes: number) {
   if (!bytes) return "";
   if (bytes === 0) return "0 Bytes";
@@ -110,7 +121,7 @@ export function getNoneDuplicatedFileName(
     ? `${fileNameWithoutExtension}.${extension}`
     : fileNameWithoutExtension;
   while (fileList.find((f) => f.name === output)) {
-    output = `${fileNameWithoutExtension}(${index})`;
+    output = `${fileNameWithoutExtension}-${index}`;
     output = extension ? `${output}.${extension}` : output;
     index++;
   }
@@ -176,7 +187,6 @@ export async function streamToBase64(stream) {
 
 export async function getFileMime(byteArray: Uint8Array | ArrayBuffer) {
   const type = await fileTypeFromBuffer(byteArray);
-  console.log("TTT", type);
   if (type) {
     return {
       body: null,

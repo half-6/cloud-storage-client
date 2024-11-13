@@ -20,36 +20,7 @@ import React, { useEffect, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Typography from "@mui/material/Typography";
 import { formatFileSize, obj2array } from "../lib";
-import { fileTypeFromBuffer } from "file-type";
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  dir?: string;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
-  return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`full-width-tab-${index}`}
-      aria-labelledby={`full-width-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ padding: "20px 0" }}>{children}</Box>}
-    </div>
-  );
-}
-function a11yProps(index: number) {
-  return {
-    id: `file-preview-tab-${index}`,
-    "aria-controls": `file-preview-tab-${index}`,
-  };
-}
+import { TabPanel, a11yProps } from "./";
 
 interface FilePreviewProps {
   show: boolean;
@@ -66,7 +37,7 @@ const tagColumns: GridColDef[] = [
   { field: "value", headerName: "Value", width: 300 },
 ];
 
-const MAX_PREVIEW_SIZE = 1024 * 1024 * 10; //10MB
+const MAX_PREVIEW_SIZE = 1024 * 1024 * 100; //100MB
 
 export const FilePreview = (props: FilePreviewProps) => {
   const [tab, setTab] = React.useState(0);
@@ -112,34 +83,44 @@ export const FilePreview = (props: FilePreviewProps) => {
           <Grid container spacing={2}>
             <Grid size={{ xs: 6 }}>
               <Box>
-                <Typography>Owner</Typography>
-                <Typography>
+                <Typography variant="subtitle2">Owner</Typography>
+                <Typography variant="body2">
                   {props.file?.permission?.Owner.DisplayName}
                 </Typography>
               </Box>
             </Grid>
             <Grid size={{ xs: 6 }}>
               <Box>
-                <Typography>Last modified</Typography>
-                <Typography>{props?.file?.lastModify?.toString()}</Typography>
+                <Typography variant="subtitle2">Last modified</Typography>
+                <Typography variant="body2">
+                  {props?.file?.lastModify?.toString()}
+                </Typography>
               </Box>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography>Size</Typography>
-              <Typography>{formatFileSize(props?.file?.size)}</Typography>
+              <Typography variant="subtitle2">Size</Typography>
+              <Typography variant="body2">
+                {formatFileSize(props?.file?.size)}
+              </Typography>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography>Content Type</Typography>
-              <Typography>{props?.file?.contentType}</Typography>
+              <Typography variant="subtitle2">Content Type</Typography>
+              <Typography variant="body2">
+                {props?.file?.contentType}
+              </Typography>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography>Entity tag (Etag)</Typography>
-              <Typography>{props?.file?.eTag}</Typography>
+              <Typography variant="subtitle2">Entity tag (Etag)</Typography>
+              <Typography variant="body2">{props?.file?.eTag}</Typography>
             </Grid>
             <Grid size={{ xs: 6 }}>
-              <Typography>Object URL</Typography>
-              <Typography>
-                <Link href={props?.file?.url} target="_blank">
+              <Typography variant="subtitle2">Object URL</Typography>
+              <Typography variant="body2">
+                <Link
+                  sx={{ wordWrap: "break-word" }}
+                  href={props?.file?.url}
+                  target="_blank"
+                >
                   {props?.file?.url}
                 </Link>
               </Typography>
@@ -173,6 +154,7 @@ export const FilePreview = (props: FilePreviewProps) => {
             />
           )}
           {props.downloadFile?.isImageContent && (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={props.downloadFile?.body}
               alt={props.downloadFile?.name}

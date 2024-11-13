@@ -26,8 +26,8 @@ import {
   FileInfo,
   FileTypeInfo,
   FolderFileType,
-  RegionInfo,
   S3PermissionInfo,
+  StorageType,
   TagInfo,
 } from "../types";
 import {
@@ -35,13 +35,14 @@ import {
   chunkArray,
   convertFileToBuffer,
   getFileMime,
-  getFileMimeByStream,
   getFileName,
   promiseAllInBatches,
 } from "./utility";
+import { PlayController } from "./";
 
 function getClient(store: AWSS3StorageInfo) {
   return new S3Client({
+    endpoint: store.endpoint || null,
     region: store.region,
     credentials: {
       accessKeyId: store.accessKeyId,
@@ -159,10 +160,20 @@ export async function getObject(
   const command = new GetObjectCommand({
     Bucket: bucketName,
     Key: file.path,
-    ChecksumMode: "ENABLED",
+    //ChecksumMode: "ENABLED",
   });
   return await client.send(command);
 }
+
+const getRangeAndLength = (contentRange) => {
+  const [range, length] = contentRange.split("/");
+  const [start, end] = range.split("-");
+  return {
+    start: Number.parseInt(start),
+    end: Number.parseInt(end),
+    length: Number.parseInt(length),
+  };
+};
 async function getObjectRange(
   store: AWSS3StorageInfo,
   bucketName: string,
@@ -170,14 +181,29 @@ async function getObjectRange(
   start: number,
   end: number,
 ) {
+  if (start > file.size) {
+    return;
+  }
+  if (end > file.size) {
+    end = file.size;
+  }
   const client = getClient(store);
   const command = new GetObjectCommand({
     Bucket: bucketName,
     Key: file.path,
     Range: `bytes=${start}-${end}`,
   });
-  return await client.send(command);
+  const res = await client.send(command);
+  const { ContentRange, Body } = res;
+  const rangeAndLength = getRangeAndLength(ContentRange);
+  return {
+    percentage: Math.round((rangeAndLength.end / rangeAndLength.length) * 100),
+    transferred: rangeAndLength.end,
+    length: rangeAndLength.length,
+    body: await Body.transformToByteArray(),
+  };
 }
+
 export async function downloadFileToStream(
   store: AWSS3StorageInfo,
   bucketName: string,
@@ -225,9 +251,13 @@ export async function getFileDetail(
   bucketName: string,
 ) {
   const res = await headObject(store, bucketName, file);
-
-  const permission = await getObjectAcl(store, bucketName, file);
   const fileDetail = { ...file } as FileDetailInfo;
+
+  if (store.type === StorageType.AWSS3) {
+    fileDetail.permission = await getObjectAcl(store, bucketName, file);
+    fileDetail.tags = await getObjectTags(store, bucketName, file);
+  }
+
   fileDetail.size = res.ContentLength || fileDetail.size;
   fileDetail.eTag = JSON.parse(res.ETag);
   fileDetail.serverSideEncryption = res.ServerSideEncryption;
@@ -250,11 +280,7 @@ export async function getFileDetail(
   //     ";base64," +
   //     Buffer.from(byteArray).toString("base64");
   // }
-  fileDetail.permission = permission;
   fileDetail.url = getUrlFromBucket(bucketName, store.region, file.path);
-  //if (res?.TagCount > 0) {
-  fileDetail.tags = await getObjectTags(store, bucketName, file);
-  //}
   return fileDetail;
 }
 
@@ -475,7 +501,6 @@ export async function uploadFile(
     //leavePartsOnError: false,
   });
   parallelUploads3.on("httpUploadProgress", (progress) => {
-    console.log(progress);
     progressor(progress);
   });
   await parallelUploads3.done();
@@ -553,7 +578,6 @@ async function copyObject(
     CopySource: sourceBucket + "/" + sourcePath,
     Key: newPath,
   });
-  console.log("copyObject", sourcePath, "=>", newPath);
   return await client.send(command);
 }
 

@@ -10,14 +10,30 @@ import FolderZipOutlinedIcon from "@mui/icons-material/FolderZipOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import { getFileExtension } from "../lib";
 
+export enum FileType {
+  Folder,
+  PDF,
+  Image,
+  Font,
+  Application,
+  HTML,
+  JS,
+  CSS,
+  Video,
+  Audio,
+  Compressed,
+  Extension,
+  Unknown,
+}
+
 export class FileTypeInfo {
   protected _name: string;
   protected _extension: string[];
-  protected _icon: any;
-  constructor(name: string, extension: string[], icon: any) {
+  protected _type: FileType;
+  constructor(name: string, extension: string[], type: FileType) {
     this._name = name;
     this._extension = extension;
-    this._icon = icon;
+    this._type = type;
   }
   get name(): string {
     return this._name;
@@ -25,15 +41,15 @@ export class FileTypeInfo {
   get extension(): string[] {
     return this._extension;
   }
-  get icon(): any {
-    return this._icon;
+  get fileType(): FileType {
+    return this._type;
   }
   static getFileType(fileName: string) {
     const extension = getFileExtension(fileName);
     if (!extension) {
       return UnknownFileType;
     }
-    for (let fileType of FileTypeList) {
+    for (let fileType of Object.values(FileTypeList)) {
       if (fileType.extension.includes(extension)) {
         return fileType;
       }
@@ -41,9 +57,10 @@ export class FileTypeInfo {
     return new FileTypeInfo(
       `${extension.toUpperCase()} File`,
       [extension],
-      TextSnippetOutlinedIcon,
+      FileType.Extension,
     );
   }
+  static getFileTypeInfo(fileType: FileType) {}
   toString(): string {
     return this.name;
   }
@@ -52,77 +69,72 @@ export class FileTypeInfo {
 export const UnknownFileType = new FileTypeInfo(
   "Unknown File",
   [],
-  TextSnippetOutlinedIcon,
+  FileType.Unknown,
 );
-export const PDFFileType = new FileTypeInfo(
-  "PDF File",
-  ["PDF"],
-  PictureAsPdfOutlinedIcon,
-);
+export const PDFFileType = new FileTypeInfo("PDF File", ["PDF"], FileType.PDF);
 export const FolderFileType = new FileTypeInfo(
   "File Folder",
   [],
-  FolderOutlinedIcon,
+  FileType.Folder,
 );
 export const ImageFileType = new FileTypeInfo(
   "Image File",
   ["JPG", "JPEG", "PNG", "BMP", "GIF", "SVG"],
-  ImageOutlinedIcon,
+  FileType.Image,
 );
 export const FontFileType = new FileTypeInfo(
   "Font File",
   ["TTF", "OTF", "EOT", "WOFF", "WOFF2"],
-  TextSnippetOutlinedIcon,
+  FileType.Font,
 );
 export const ApplicationFileType = new FileTypeInfo(
   "Application",
   ["EXE"],
-  TextSnippetOutlinedIcon,
+  FileType.Application,
 );
 export const HTMLFileType = new FileTypeInfo(
   "HTML File",
   ["html"],
-  HtmlOutlinedIcon,
+  FileType.HTML,
 );
 export const JSFileType = new FileTypeInfo(
   "JS File",
   ["JS", "TS"],
-  JavascriptOutlinedIcon,
+  FileType.JS,
 );
-export const CSSFileType = new FileTypeInfo(
-  "CSS File",
-  ["css"],
-  CssOutlinedIcon,
-);
+export const CSSFileType = new FileTypeInfo("CSS File", ["CSS"], FileType.CSS);
 export const VideoFileType = new FileTypeInfo(
   "VIDEO File",
   ["MP4", "WMV", "AVI", "MOV", "MKV"],
-  VideoFileOutlinedIcon,
+  FileType.Video,
 );
 export const AudioFileType = new FileTypeInfo(
   "AUDIO File",
   ["MP3", "WAV", "AAC", "FLAC", "OGG"],
-  AudioFileOutlinedIcon,
+  FileType.Audio,
 );
 
-export const ZipFileType = new FileTypeInfo(
-  "AUDIO File",
+export const CompressedFileType = new FileTypeInfo(
+  "Compressed File",
   ["zip", "7Z", "GZIP", "TAR"],
-  FolderZipOutlinedIcon,
+  FileType.Compressed,
 );
 
-// export enum FileType {
-//   Folder = FolderFileType,
-//   Image = ImageFileType,
-//   Font = FontFileType,
-//   Application = ApplicationFileType,
-//   HTML = HTMLFileType,
-//   JS = JSFileType,
-//   CSS = CSSFileType,
-//   Video = VideoFileType,
-//   Audio = AudioFileType,
-//   Zip = ZipFileType,
-// }
+export const FileTypeIconMapping = {
+  [FileType.Folder]: FolderOutlinedIcon,
+  [FileType.PDF]: PictureAsPdfOutlinedIcon,
+  [FileType.Image]: ImageOutlinedIcon,
+  [FileType.Font]: TextSnippetOutlinedIcon,
+  [FileType.Application]: TextSnippetOutlinedIcon,
+  [FileType.HTML]: HtmlOutlinedIcon,
+  [FileType.JS]: JavascriptOutlinedIcon,
+  [FileType.CSS]: CssOutlinedIcon,
+  [FileType.Video]: VideoFileOutlinedIcon,
+  [FileType.Audio]: AudioFileOutlinedIcon,
+  [FileType.Compressed]: FolderZipOutlinedIcon,
+  [FileType.Unknown]: TextSnippetOutlinedIcon,
+  [FileType.Extension]: TextSnippetOutlinedIcon,
+};
 const FileTypeList = [
   PDFFileType,
   ImageFileType,
@@ -133,5 +145,5 @@ const FileTypeList = [
   CSSFileType,
   VideoFileType,
   AudioFileType,
-  ZipFileType,
+  CompressedFileType,
 ];

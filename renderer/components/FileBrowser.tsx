@@ -1,4 +1,9 @@
-import { FileInfo, FolderFileType, StorageInfo } from "../types";
+import {
+  FileInfo,
+  FileTypeIconMapping,
+  FolderFileType,
+  StorageInfo,
+} from "../types";
 import {
   DataGrid,
   GridActionsCellItem,
@@ -256,7 +261,8 @@ export const FileBrowser = (props: FileBrowserProps) => {
       //editable: true,
       renderCell: (params) => {
         const file = params.row as FileInfo;
-        return <IconLabel icon={<file.type.icon />} label={params.value} />;
+        const FileTypeIcon = FileTypeIconMapping[file.type.fileType];
+        return <IconLabel icon={<FileTypeIcon />} label={params.value} />;
       },
     },
     {
@@ -412,7 +418,6 @@ export const FileBrowser = (props: FileBrowserProps) => {
           } else {
             setOpenRenameDialog(false);
             await props.onRenameFile?.(file, newFileName);
-            await handleRefresh();
           }
         }}
         onCancel={async () => {
@@ -430,7 +435,6 @@ export const FileBrowser = (props: FileBrowserProps) => {
           } else {
             setOpenNewFolderDialog(false);
             await props.onNewFolder?.(newFileName);
-            await handleRefresh();
           }
         }}
         onCancel={async () => {

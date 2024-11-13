@@ -23,6 +23,7 @@ import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import StopIcon from "@mui/icons-material/Stop";
+import PlayIcon from "@mui/icons-material/PlayArrow";
 
 function CircularProgressWithLabel(
   props: CircularProgressProps & { value: number },
@@ -66,6 +67,9 @@ export const JobsPanel = () => {
     setJobMenuAnchorEl(null);
   };
   const handleStopJobMenu = () => {
+    handleCloseMenu();
+  };
+  const handlePlayJobMenu = () => {
     handleCloseMenu();
   };
   const handleDeleteJobMenu = () => {
@@ -113,7 +117,10 @@ export const JobsPanel = () => {
             />
             <ListItemIcon sx={{ minWidth: "auto", paddingRight: "5px" }}>
               {job.status === JobStatusInfo.loading && (
-                <CircularProgressWithLabel size="20px" value={job.progress} />
+                <CircularProgressWithLabel
+                  size="20px"
+                  value={job.progress?.percentage || 0}
+                />
               )}
               {job.status === JobStatusInfo.completed && (
                 <CheckCircleOutlinedIcon />
@@ -154,6 +161,14 @@ export const JobsPanel = () => {
               <StopIcon />
             </ListItemIcon>
             <ListItemText>Stop Job</ListItemText>
+          </MenuItem>
+        )}
+        {selectedJob && selectedJob.status === JobStatusInfo.pause && (
+          <MenuItem onClick={handlePlayJobMenu}>
+            <ListItemIcon>
+              <PlayIcon />
+            </ListItemIcon>
+            <ListItemText>Play Job</ListItemText>
           </MenuItem>
         )}
         {selectedJob &&

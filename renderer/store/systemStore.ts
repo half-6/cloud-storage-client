@@ -34,6 +34,7 @@ export const useSystemStore = create<SystemStoreState>((set, get) => {
             id: store.id || v4().toString(),
           };
         });
+        console.log("read-config", message);
         set(() => ({
           localStorage: message,
         }));
@@ -56,6 +57,7 @@ export const useSystemStore = create<SystemStoreState>((set, get) => {
         };
       });
       set({ localStorage: config });
+      console.log("write-config", config);
       window.ipc.send("write-config", config);
     },
     //storage

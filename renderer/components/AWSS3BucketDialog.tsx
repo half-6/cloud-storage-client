@@ -8,16 +8,16 @@ import {
   InputLabel,
   MenuItem,
   Select,
-  SelectChangeEvent,
   TextField,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import Typography from "@mui/material/Typography";
 import { useForm } from "react-hook-form";
-import { BucketInfo, RegionInfoList } from "../types";
+import { BucketInfo, RegionInfoList, StorageInfo, StorageType } from "../types";
 
 interface AWSS3BucketDialogProps {
   show: boolean;
+  storage: StorageInfo;
   bucket: BucketInfo;
   onSave: (bucket: BucketInfo) => Promise<void>;
   onCancel: () => Promise<void>;
@@ -77,21 +77,40 @@ export const AWSS3BucketDialog = (props: AWSS3BucketDialogProps) => {
             {...register("name", { required: true })}
           />
           <FormControl variant="standard" sx={{ marginTop: 1, minWidth: 300 }}>
-            <InputLabel id="region-label">Region</InputLabel>
-            <Select
-              labelId="region-label"
-              id="region"
-              name="region"
-              defaultValue={props?.bucket?.region}
-              {...register("region")}
-            >
-              {RegionInfoList &&
-                RegionInfoList.map((item, index) => (
-                  <MenuItem key={index} value={item}>
-                    {item}
-                  </MenuItem>
-                ))}
-            </Select>
+            {props.storage?.type === StorageType.AWSS3 && (
+              <>
+                <InputLabel id="region-label">Region</InputLabel>
+                <Select
+                  labelId="region-label"
+                  id="region"
+                  name="region"
+                  defaultValue={props?.bucket?.region}
+                  {...register("region")}
+                >
+                  {RegionInfoList &&
+                    RegionInfoList.map((item, index) => (
+                      <MenuItem key={index} value={item}>
+                        {item}
+                      </MenuItem>
+                    ))}
+                </Select>
+              </>
+            )}
+            {props.storage?.type === StorageType.AWSS3COMPATIBLE && (
+              <TextField
+                required
+                margin="dense"
+                id="region"
+                name="region"
+                label="Region"
+                defaultValue={props?.bucket?.region}
+                type="string"
+                fullWidth
+                variant="standard"
+                error={errors.region != null}
+                {...register("region", { required: false })}
+              ></TextField>
+            )}
           </FormControl>
         </DialogContent>
         <DialogActions>

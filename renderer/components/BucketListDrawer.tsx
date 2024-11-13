@@ -30,7 +30,7 @@ import CloudOutlinedIcon from "@mui/icons-material/CloudOutlined";
 import MoreVertOutlinedIcon from "@mui/icons-material/MoreVertOutlined";
 import CreateNewFolderOutlinedIcon from "@mui/icons-material/CreateNewFolderOutlined";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import { AWSS3StoragePanel } from "./AWSS3StoragePanel";
+import { StoragePanel } from "./StoragePanel";
 import { IconLabel } from "./IconLabel";
 import { AWSS3BucketDialog } from "./AWSS3BucketDialog";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
@@ -76,8 +76,7 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
   const [showStorageDialog, setShowStorageDialog] = useState(false);
   const [showBucketDialog, setShowBucketDialog] = useState(false);
   const [selectedTreeItem, setSelectedTreeItem] = useState<TreeItemInfo>(null);
-  const [selectedBucket, setSelectedBucket] = useState<BucketInfo>(null);
-
+  const { openAlertAsync } = useAlertStore();
   const [newMenuAnchorEl, setNewMenuAnchorEl] =
     React.useState<null | HTMLElement>(null);
   const openNewMenu = Boolean(newMenuAnchorEl);
@@ -88,15 +87,27 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
     bucket: BucketInfo,
   ) => {
     setSelectedTreeItem(treeItem);
-    setSelectedBucket(bucket);
     await props?.onBucketClick(treeItem.storage, bucket);
   };
+  const handleDeleteBucket = async (treeItem, bucket) => {
+    await props.onDeleteBucket(treeItem.storage, bucket);
+    setTimeout(async () => {
+      await handleRefreshBucketList(selectedTreeItem);
+    }, 500);
+  };
+
   const handleStorageClick = async (treeItem: TreeItemInfo) => {
     if (!treeItem.buckets) {
       await props?.onStorageClick(treeItem);
-      forceUpdate();
+      setTreeItems(treeItems);
     }
     setSelectedTreeItem(treeItem);
+  };
+  const handleRefreshBucketList = async (treeItem: TreeItemInfo) => {
+    await props?.onStorageClick(treeItem);
+    setTreeItems(treeItems);
+    setSelectedTreeItem(treeItem);
+    forceUpdate();
   };
 
   const handleDrawerClose = () => {
@@ -114,8 +125,19 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
   };
   const handleNewBucketMenu = async () => {
     setNewMenuAnchorEl(null);
-    setSelectedBucket(null);
     setShowBucketDialog(true);
+  };
+  const handleNewBucket = async (bucket: BucketInfo) => {
+    const exist = selectedTreeItem.buckets.find((f) => f.name === bucket.name);
+    if (exist) {
+      await openAlertAsync({
+        body: `There is already a bucket with the same name in this account`,
+      });
+    } else {
+      await props.onCreateBucket(selectedTreeItem.storage, bucket);
+      setShowBucketDialog(false);
+    }
+    await handleRefreshBucketList(selectedTreeItem);
   };
   useEffect(() => {
     setTreeItems(
@@ -164,10 +186,8 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
         treeItems={treeItems}
         onStorageClick={handleStorageClick}
         onBucketClick={handleBucketClick}
-        onRefreshBucketList={handleStorageClick}
-        onDeleteBucket={async (treeItem, bucket) => {
-          await props.onDeleteBucket(treeItem.storage, bucket);
-        }}
+        onRefreshBucketList={handleRefreshBucketList}
+        onDeleteBucket={handleDeleteBucket}
         onNewBucket={async (treeItem) => {
           setSelectedTreeItem(treeItem);
           await handleNewBucketMenu();
@@ -178,16 +198,14 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
 
       <AWSS3BucketDialog
         bucket={null}
+        storage={selectedTreeItem?.storage}
         show={showBucketDialog}
-        onSave={async (bucket: BucketInfo) => {
-          await props.onCreateBucket(selectedTreeItem.storage, bucket);
-          setShowBucketDialog(false);
-        }}
+        onSave={handleNewBucket}
         onCancel={async () => {
           setShowBucketDialog(false);
         }}
       />
-      <AWSS3StoragePanel
+      <StoragePanel
         open={showStorageDialog}
         storage={null}
         onSave={(storage) => {

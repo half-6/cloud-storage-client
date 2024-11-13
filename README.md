@@ -4,8 +4,9 @@ The app is build by [Electron](https://www.electronjs.org/) , so it would be an 
 
 ## Supported cloud storage
 it is support AWS S3 for only, we will add more
-- AWS S3
-- Azure Blob Storage (TBD)
+- Amazon S3 Storage
+- Amazon S3 Compatible Storage
+- Google Storage (TBD)
 
 
 ## Features

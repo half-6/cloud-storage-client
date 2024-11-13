@@ -1,24 +1,10 @@
+"use client";
 import React, { useState } from "react";
-import Head from "next/head";
 import { Box, Button, styled } from "@mui/material";
 import {
-  cloneObject,
-  convertFileToBuffer,
-  createBucket,
-  createFile,
-  createFolder,
-  deleteBucket,
-  deleteObject,
-  downloadFileToStream,
-  downloadObject,
-  getAllBuckets,
-  getAllFiles,
-  getFileDetail,
+  StorageClientFactory,
   getNoneDuplicatedCloneFileName,
   getNoneDuplicatedFileName,
-  getPercentage,
-  renameObject,
-  uploadFile,
   useSWRAbort,
 } from "../lib";
 import {
@@ -28,6 +14,7 @@ import {
   FileInfo,
   FolderFileType,
   JobInfo,
+  JobProgressInfo,
   JobStatusInfo,
   JobTypeInfo,
   StorageInfo,
@@ -45,6 +32,9 @@ import {
   TreeItemInfo,
 } from "../components";
 import { useJobStore, useSystemStore, useToastStore } from "../store";
+import useSWR from "swr";
+import { SnackbarProvider, enqueueSnackbar, useSnackbar } from "notistack";
+import { v4 } from "uuid";
 
 const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
   open?: boolean;
@@ -73,14 +63,17 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
 }));
 
 export default function HomePage() {
-  const { downloadFile: downloadFileJob, jobs, setJobs } = useJobStore();
-  const [bucketName, setBucketName] = useState<string>("");
-  const [prefix, setPrefix] = useState<string>(null);
   const { showDrawer } = useSystemStore();
-  const { showToastMessage } = useToastStore();
+  const { downloadFile: downloadFileJob, jobs, setJobs } = useJobStore();
+  const [selectedStorage, setSelectedStorage] = useState<StorageInfo>();
+  const [selectedBucket, setSelectedBucket] = useState<BucketInfo>();
+  const [prefix, setPrefix] = useState<string>(null);
+  const [selectedFile, setSelectedFile] = useState<FileInfo>();
+
+  const { enqueueSnackbar } = useSnackbar();
+
   const [loadedFileNumber, setLoadedFileNumber] = useState(0);
   const [showFileDetail, setShowFileDetail] = useState<boolean>(false);
-  const [selectedFile, setSelectedFile] = useState<FileInfo>();
   const [isDownloadFile, setIsDownloadFile] = useState<boolean>(false);
   const [backgroundJobs, setBackgroundJobs] = useState<JobInfo[]>();
   const {
@@ -90,7 +83,7 @@ export default function HomePage() {
     error: bucketError,
     mutate: reloadFiles,
     abort: fileListAbort,
-  } = useSWRAbort([bucketName, prefix], getFilesFromStorage, {
+  } = useSWRAbort([selectedBucket?.name, prefix], getFilesFromStorage, {
     revalidateIfStale: true,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -99,16 +92,13 @@ export default function HomePage() {
     data: fileDetail,
     isLoading: fileDetailLoading,
     error: fileDetailError,
-    abort: fileDetailAbort,
-  } = useSWRAbort(
+  } = useSWR(
     selectedFile?.path && selectedFile.type != FolderFileType && showFileDetail
       ? [selectedFile?.path, showFileDetail.toString()]
       : null,
-    async (signal, params) => {
-      return await getFileDetail(
-        selectedStorage as AWSS3StorageInfo,
+    async (params) => {
+      return StorageClientFactory.createClient(selectedStorage).getFile(
         selectedFile,
-        bucketName,
       );
     },
   );
@@ -116,8 +106,7 @@ export default function HomePage() {
     data: downloadFile,
     isLoading: downloadLoading,
     error: downloadFileError,
-    abort: downloadFileAbort,
-  } = useSWRAbort(
+  } = useSWR(
     selectedFile?.path &&
       selectedFile.type != FolderFileType &&
       showFileDetail &&
@@ -128,70 +117,155 @@ export default function HomePage() {
           isDownloadFile.toString(),
         ]
       : null,
-    async (signal, params) => {
-      return await downloadObject(
-        selectedStorage as AWSS3StorageInfo,
-        bucketName,
+    async (params) => {
+      return StorageClientFactory.createClient(selectedStorage).downloadFile(
         selectedFile,
       );
     },
   );
 
-  const [selectedStorage, setSelectedStorage] = useState<StorageInfo>();
-
   const fileListAborter = () => {
     fileListAbort();
-    showToastMessage({ message: "The request has been aborted" });
+    enqueueSnackbar("The request has been aborted", { variant: "info" });
   };
 
   async function getFilesFromStorage(signal, params) {
-    const name = params[0];
+    const bucketName = params[0];
     const px = params[1];
     setLoadedFileNumber(0);
-    if (name) {
+    if (bucketName) {
       const command = {
-        Bucket: name,
+        Bucket: bucketName,
         Prefix: px,
       };
-      const output = await getAllFiles(
-        selectedStorage as AWSS3StorageInfo,
-        command,
-        signal,
-        (progress) => {
-          setLoadedFileNumber(progress);
-        },
-      );
+      const output = await StorageClientFactory.createClient(
+        selectedStorage,
+      ).getFiles(selectedBucket, px, signal, (progress) => {
+        setLoadedFileNumber(progress);
+      });
       setLoadedFileNumber(0);
-      showToastMessage({ message: "Load file list completed" });
       return output;
     }
     return null;
   }
+
   async function handleBucketClick(storage: StorageInfo, bucket: BucketInfo) {
     setSelectedStorage(storage);
-    setBucketName(bucket.name);
+    setSelectedBucket(bucket);
     setPrefix(null);
   }
 
   async function handleCreateBucket(storage: StorageInfo, bucket: BucketInfo) {
-    await createBucket(storage as AWSS3StorageInfo, bucket);
+    await StorageClientFactory.createClient(storage).createBucket(bucket);
   }
 
   async function handleDeleteBucket(storage: StorageInfo, bucket: BucketInfo) {
-    await deleteBucket(storage as AWSS3StorageInfo, bucket);
+    await StorageClientFactory.createClient(storage).deleteBucket(bucket);
+  }
+
+  async function handleNewFolder(newFolderName: string) {
+    await StorageClientFactory.createClient(selectedStorage).createFolder({
+      name: newFolderName,
+      path: prefix ? `${prefix}${newFolderName}` : newFolderName,
+      bucket: selectedBucket,
+    } as FileInfo);
+    await reloadFiles();
+    enqueueSnackbar(`Create new folder ${newFolderName} success`, {
+      variant: "success",
+    });
+  }
+
+  async function handleCloneObject(file: FileInfo) {
+    const newFileName = getNoneDuplicatedCloneFileName(fileList, file.name);
+    const newFile = await StorageClientFactory.createClient(
+      selectedStorage,
+    ).cloneObject(file, prefix ? `${prefix}${newFileName}` : newFileName);
+    await reloadFiles();
+    enqueueSnackbar(`Clone ${newFile.path} success`, {
+      variant: "success",
+    });
+  }
+
+  async function handleRefreshList() {
+    await reloadFiles();
+    enqueueSnackbar(`Refresh list success`, {
+      variant: "success",
+    });
+  }
+
+  async function handleRenameObject(file, newFileName) {
+    await StorageClientFactory.createClient(selectedStorage).renameObject(
+      file,
+      newFileName,
+    );
+    await reloadFiles();
+    enqueueSnackbar(`Rename ${newFileName} success`, {
+      variant: "success",
+    });
+  }
+
+  async function handleUploadFile(file: File) {
+    const fileName = getNoneDuplicatedFileName(fileList, file.name);
+    const uploadFilePath = prefix ? `${prefix}${fileName}` : fileName;
+    const newJob = {
+      id: v4().toString(),
+      name: file.name,
+      status: JobStatusInfo.loading,
+      progress: {
+        loaded: 0,
+        total: file.size,
+        percentage: 0,
+      } as JobProgressInfo,
+      createdTime: new Date(),
+      type: JobTypeInfo.download,
+    } as JobInfo;
+    jobs.push(newJob);
+    setJobs(jobs);
+    await StorageClientFactory.createClient(selectedStorage).uploadFile(
+      selectedBucket,
+      uploadFilePath,
+      file,
+      (progress) => {
+        const existJob = jobs.find((job) => job.id === newJob.id);
+        if (existJob) {
+          existJob.progress.percentage = progress.percentage;
+          existJob.progress.loaded = progress.loaded;
+          existJob.progress.total = progress.total;
+          setJobs(jobs);
+        }
+      },
+    );
+    await reloadFiles();
+    const existJob = jobs.find((job) => job.id === file.path);
+    if (existJob) {
+      existJob.progress.percentage = 100;
+      existJob.status = JobStatusInfo.completed;
+      setJobs(jobs);
+      enqueueSnackbar(`Upload ${file.name} success`, {
+        variant: "success",
+      });
+    }
+  }
+
+  async function handleDeleteObject(file: FileInfo) {
+    await StorageClientFactory.createClient(selectedStorage).deleteObject(file);
+    await reloadFiles();
+    enqueueSnackbar(`Delete ${file.name} success`, {
+      variant: "success",
+    });
   }
 
   async function handleStorageClick(treeItem: TreeItemInfo) {
     setSelectedStorage(treeItem.storage);
-    treeItem.buckets = await getAllBuckets(
-      treeItem.storage as AWSS3StorageInfo,
-    );
+    treeItem.buckets = await StorageClientFactory.createClient(
+      treeItem.storage,
+    ).getBuckets();
   }
   const getMenuList = function () {
-    if (!bucketName) return [];
+    if (!selectedBucket) return [];
     const list: MenuInfo[] = [];
     list.push({ name: selectedStorage.name, link: "" });
-    list.push({ name: bucketName, link: "" });
+    list.push({ name: selectedBucket.name, link: "" });
     let history = "";
     prefix?.split("/").forEach((item) => {
       if (!item) return;
@@ -242,122 +316,14 @@ export default function HomePage() {
               setShowFileDetail(true);
             }
           }}
-          // onNewFile={async (file) => {
-          //   await createFile(
-          //     selectedStorage as AWSS3StorageInfo,
-          //     {
-          //       name: "new Folder",
-          //       path: "test.txt",
-          //       body: "DDDDDDDDD",
-          //       contentType: "plain/text",
-          //     } as FileDetailInfo,
-          //     bucketName,
-          //   );
-          //   await reloadFiles();
-          // }}
-          onNewFolder={async (newFolderName) => {
-            await createFolder(
-              selectedStorage as AWSS3StorageInfo,
-              {
-                name: newFolderName,
-                path: prefix ? `${prefix}${newFolderName}` : newFolderName,
-              } as FileInfo,
-              bucketName,
-            );
-            await reloadFiles();
-            showToastMessage({
-              message: `Create new folder ${newFolderName} completed`,
-            });
-          }}
-          onDeleteFile={async (file) => {
-            await deleteObject(
-              selectedStorage as AWSS3StorageInfo,
-              bucketName,
-              file,
-            );
-            await reloadFiles();
-            showToastMessage({
-              message: `Delete ${file.path} completed`,
-            });
-          }}
-          onCloneFile={async (file) => {
-            const newFileName = getNoneDuplicatedCloneFileName(
-              fileList,
-              file.name,
-            );
-            const newKey = await cloneObject(
-              selectedStorage as AWSS3StorageInfo,
-              bucketName,
-              file,
-              prefix ? `${prefix}${newFileName}` : newFileName,
-            );
-            await reloadFiles();
-            showToastMessage({
-              message: `Clone ${newKey} completed`,
-            });
-          }}
-          onRefresh={async () => {
-            await reloadFiles();
-          }}
-          onRenameFile={async (file, newFileName) => {
-            await renameObject(
-              selectedStorage as AWSS3StorageInfo,
-              bucketName,
-              file,
-              newFileName,
-            );
-            showToastMessage({
-              message: `Rename ${newFileName} completed`,
-            });
-          }}
-          onUploadFile={async (file: File) => {
-            //const buffer = await convertFileToBuffer(file);
-            const fileName = getNoneDuplicatedFileName(fileList, file.name);
-            const uploadFilePath = prefix ? `${prefix}${fileName}` : fileName;
-            await uploadFile(
-              selectedStorage as AWSS3StorageInfo,
-              bucketName,
-              uploadFilePath,
-              file,
-              (progress) => {
-                const currentProgress = getPercentage(
-                  progress.loaded,
-                  progress.total,
-                );
-                const existJob = jobs.find((job) => job.id === file.path);
-                if (existJob) {
-                  existJob.progress = currentProgress;
-                  setJobs(jobs);
-                } else {
-                  jobs.push({
-                    id: file.path,
-                    name: file.name,
-                    progress: currentProgress,
-                    createdTime: new Date(),
-                    status: JobStatusInfo.loading,
-                    type: JobTypeInfo.upload,
-                  } as JobInfo);
-                  setJobs(jobs);
-                }
-              },
-            );
-            await reloadFiles();
-            const existJob = jobs.find((job) => job.id === file.path);
-            if (existJob) {
-              existJob.progress = 100;
-              existJob.status = JobStatusInfo.completed;
-              setJobs(jobs);
-              useToastStore.getState().showToastMessage({
-                message: `Upload ${file.name} to S3 success`,
-              });
-            }
-          }}
+          onNewFolder={handleNewFolder}
+          onDeleteFile={handleDeleteObject}
+          onCloneFile={handleCloneObject}
+          onRefresh={handleRefreshList}
+          onRenameFile={handleRenameObject}
+          onUploadFile={handleUploadFile}
           onDownloadFile={async (file: FileInfo) => {
-            downloadFileJob(
-              selectedStorage as AWSS3StorageInfo,
-              bucketName,
-              file,
-            );
+            downloadFileJob(file);
           }}
         />
         <FilePreview
