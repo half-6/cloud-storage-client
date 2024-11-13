@@ -217,7 +217,7 @@ export default function HomePage() {
         percentage: 0,
       } as JobProgressInfo,
       createdTime: new Date(),
-      type: JobTypeInfo.download,
+      type: JobTypeInfo.upload,
     } as JobInfo;
     jobs.push(newJob);
     setJobs(jobs);
@@ -236,7 +236,7 @@ export default function HomePage() {
       },
     );
     await reloadFiles();
-    const existJob = jobs.find((job) => job.id === file.path);
+    const existJob = jobs.find((job) => job.id === newJob.id);
     if (existJob) {
       existJob.progress.percentage = 100;
       existJob.status = JobStatusInfo.completed;
