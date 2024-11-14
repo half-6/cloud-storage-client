@@ -64,7 +64,12 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
 
 export default function HomePage() {
   const { showDrawer } = useSystemStore();
-  const { downloadFile: downloadFileJob, jobs, setJobs } = useJobStore();
+  const {
+    downloadFile: downloadFileJob,
+    jobs,
+    setJobs,
+    downloadFolder: downloadFolderJob,
+  } = useJobStore();
   const [selectedStorage, setSelectedStorage] = useState<StorageInfo>();
   const [selectedBucket, setSelectedBucket] = useState<BucketInfo>();
   const [prefix, setPrefix] = useState<string>(null);
@@ -124,9 +129,9 @@ export default function HomePage() {
     },
   );
 
-  const fileListAborter = () => {
+  const handleFileListAbout = () => {
     fileListAbort();
-    enqueueSnackbar("The request has been aborted", { variant: "info" });
+    enqueueSnackbar("The request has been aborted", { variant: "success" });
   };
 
   async function getFilesFromStorage(signal, params) {
@@ -247,6 +252,13 @@ export default function HomePage() {
     }
   }
 
+  async function handleDownloadFile(file: FileInfo) {
+    downloadFileJob(file);
+  }
+  async function handleDownloadFolder(file: FileInfo) {
+    downloadFolderJob(file);
+  }
+
   async function handleDeleteObject(file: FileInfo) {
     await StorageClientFactory.createClient(selectedStorage).deleteObject(file);
     await reloadFiles();
@@ -276,7 +288,7 @@ export default function HomePage() {
   };
 
   const handleMenuClick = function (menu: MenuInfo) {
-    fileListAborter();
+    fileListAbort();
     setPrefix(menu.link);
   };
   return (
@@ -297,11 +309,11 @@ export default function HomePage() {
           fileList={fileList}
           loading={fileListLoading}
           numberOfLoaded={loadedFileNumber}
-          onAbout={fileListAborter}
+          onAbout={handleFileListAbout}
           onFileClick={(file) => {
             setSelectedFile(file);
             if (file.type === FolderFileType) {
-              fileListAborter();
+              fileListAbort();
               setPrefix(file.path);
             } else {
               setShowFileDetail(true);
@@ -310,7 +322,7 @@ export default function HomePage() {
           onEditFile={(file) => {
             setSelectedFile(file);
             if (file.type === FolderFileType) {
-              fileListAborter();
+              fileListAbort();
               setPrefix(file.path);
             } else {
               setShowFileDetail(true);
@@ -322,9 +334,8 @@ export default function HomePage() {
           onRefresh={handleRefreshList}
           onRenameFile={handleRenameObject}
           onUploadFile={handleUploadFile}
-          onDownloadFile={async (file: FileInfo) => {
-            downloadFileJob(file);
-          }}
+          onDownloadFile={handleDownloadFile}
+          onDownloadFolder={handleDownloadFolder}
         />
         <FilePreview
           file={fileDetail}

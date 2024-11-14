@@ -166,12 +166,6 @@ function CustomDataGridToolbar(props: CustomGridToolbarProps) {
           </ListItemIcon>
           <ListItemText>New Folder</ListItemText>
         </MenuItem>
-        {/*<MenuItem onClick={handleNewFile}>*/}
-        {/*  <ListItemIcon>*/}
-        {/*    <InsertDriveFileOutlinedIcon />*/}
-        {/*  </ListItemIcon>*/}
-        {/*  <ListItemText>New Text File</ListItemText>*/}
-        {/*</MenuItem>*/}
         <MenuItem onClick={handleUploadFile}>
           <ListItemIcon>
             <UploadFileIcon />
@@ -204,6 +198,7 @@ export interface FileBrowserProps {
   onAbout: () => void;
   onUploadFile: (file: File) => Promise<void>;
   onDownloadFile: (file: FileInfo) => Promise<void>;
+  onDownloadFolder: (file: FileInfo) => Promise<void>;
 }
 
 declare module "@mui/x-data-grid" {
@@ -288,8 +283,9 @@ export const FileBrowser = (props: FileBrowserProps) => {
     {
       type: "actions",
       field: "actions",
+      //headerName: "Action",
       resizable: false,
-      width: 100,
+      width: 50,
       getActions: (params) => {
         const file = params.row as FileInfo;
         let menu = [
@@ -337,6 +333,18 @@ export const FileBrowser = (props: FileBrowserProps) => {
             />,
           ];
         }
+        // if (file.type === FolderFileType) {
+        //   menu = [
+        //     ...menu,
+        //     <GridActionsCellItem
+        //       label="Download"
+        //       key={3}
+        //       icon={<DownloadIcon fontSize="small" />}
+        //       onClick={() => handleDownloadFolder(file)}
+        //       showInMenu
+        //     />,
+        //   ];
+        // }
         return menu;
       },
     },
@@ -360,6 +368,9 @@ export const FileBrowser = (props: FileBrowserProps) => {
   };
   const handleDownloadFile = async (file: FileInfo) => {
     await props.onDownloadFile(file);
+  };
+  const handleDownloadFolder = async (file: FileInfo) => {
+    await props.onDownloadFolder(file);
   };
   const handleRefresh = async () => {
     await props.onRefresh();

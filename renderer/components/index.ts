@@ -5,7 +5,6 @@ export * from "./FileBrowser";
 export * from "./Alert";
 export * from "./IconLabel";
 export * from "./FilePreview";
-export * from "./ToastMessage";
 export * from "./FileRename";
 export * from "./NewFolderDialog";
 export * from "./Button";

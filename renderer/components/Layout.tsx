@@ -1,9 +1,7 @@
 import { Alert } from "./Alert";
-import { ToastMessage } from "./ToastMessage";
 import React from "react";
 import Head from "next/head";
 import { Box, Button } from "@mui/material";
-import { SnackbarProvider } from "notistack";
 import { useAlertStore } from "../store";
 
 interface LayoutProps {
@@ -31,7 +29,6 @@ export const Layout = (props: LayoutProps) => {
       </Head>
       <Box sx={{ display: "flex" }}>{props.children}</Box>
       <Alert />
-      <ToastMessage />
     </>
   );
 };
