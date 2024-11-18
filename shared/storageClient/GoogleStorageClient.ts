@@ -5,7 +5,7 @@ import {
   GoogleCloudStorageInfo,
   JobDownloadInfo,
   JobProgressInfo,
-} from "../../types";
+} from "#types";
 import { StorageClient } from "./StorageClient";
 
 export class GoogleStorageClient extends StorageClient<GoogleCloudStorageInfo> {
@@ -86,5 +86,13 @@ export class GoogleStorageClient extends StorageClient<GoogleCloudStorageInfo> {
     end: number,
   ): Promise<JobDownloadInfo> {
     return Promise.resolve(undefined);
+  }
+
+  headObject(file: FileInfo): Promise<FileDetailInfo> {
+    return Promise.resolve(undefined);
+  }
+
+  hasObject(file: FileInfo): Promise<boolean> {
+    return Promise.resolve(false);
   }
 }

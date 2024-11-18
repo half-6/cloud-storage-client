@@ -13,7 +13,7 @@ import {
 import React, { useEffect, useState } from "react";
 import Typography from "@mui/material/Typography";
 import { useForm } from "react-hook-form";
-import { BucketInfo, RegionInfoList, StorageInfo, StorageType } from "../types";
+import { BucketInfo, RegionInfoList, StorageInfo, StorageType } from "#types";
 
 interface AWSS3BucketDialogProps {
   show: boolean;

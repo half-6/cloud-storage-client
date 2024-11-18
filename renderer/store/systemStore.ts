@@ -5,7 +5,7 @@ import {
   FileInfo,
   LocalStorageInfo,
   StorageInfo,
-} from "../types";
+} from "#types";
 import { isIpcReady } from "../lib";
 export interface SystemStoreState {
   showDrawer: boolean;

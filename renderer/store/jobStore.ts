@@ -5,8 +5,8 @@ import {
   JobProgressInfo,
   JobStatusInfo,
   JobTypeInfo,
-} from "../types";
-import { StorageClientFactory, deepClone, isIpcReady } from "../lib";
+} from "#types";
+import { deepClone, isIpcReady } from "../lib";
 import { v4 } from "uuid";
 import { enqueueSnackbar } from "notistack";
 
@@ -15,13 +15,11 @@ export interface JobStoreState {
   jobs: JobInfo[];
   setJobs: (jobs: JobInfo[]) => void;
   upsertJob: (job: JobInfo) => void;
-  stopJob: (job: JobInfo) => void;
+  deleteJob: (job: JobInfo) => void;
   downloadFile: (file: FileInfo) => void;
   downloadFolder: (file: FileInfo) => void;
   openFile: (filePath: string) => void;
 }
-const oneMB = 1024 * 1024;
-
 export const useJobStore = create<JobStoreState>((set, get) => {
   if (isIpcReady()) {
     setTimeout(() => {

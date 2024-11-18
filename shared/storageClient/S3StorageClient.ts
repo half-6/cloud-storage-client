@@ -2,8 +2,8 @@ import {
   AWSS3StorageInfo,
   BucketInfo,
   FileDetailInfo,
+  FileFormatType,
   FileInfo,
-  FileType,
   FileTypeInfo,
   FolderFileType,
   JobInfo,
@@ -11,7 +11,8 @@ import {
   S3PermissionInfo,
   StorageType,
   TagInfo,
-} from "../../types";
+} from "#types";
+
 import { StorageClient } from "./StorageClient";
 
 import {
@@ -41,7 +42,7 @@ import {
   getPercentage,
   promiseAllInBatches,
   replaceFromEnd,
-} from "../utility";
+} from "#utility";
 import { Progress, Upload } from "@aws-sdk/lib-storage";
 
 export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
@@ -56,7 +57,6 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
         secretAccessKey: this.storage.secretAccessKey,
       },
     });
-    console.log("CREATE CLIENT", storage.name);
   }
 
   //region Bucket Operation
@@ -245,13 +245,32 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   //endregion
 
   //region Object operation
-  private async headObject(file: FileInfo) {
+  async headObject(file: FileInfo): Promise<FileDetailInfo> {
     const command = new HeadObjectCommand({
       Bucket: file.bucket.name,
       Key: file.path,
     });
-    return await this.client.send(command);
+    const res = await this.client.send(command);
+    const fileDetail = { ...file } as FileDetailInfo;
+    fileDetail.size = res.ContentLength || fileDetail.size;
+    fileDetail.eTag = res.ETag;
+    fileDetail.serverSideEncryption = res.ServerSideEncryption;
+    fileDetail.versionId = res.VersionId;
+    fileDetail.acceptRanges = res.AcceptRanges;
+    fileDetail.metadata = res.Metadata;
+    fileDetail.contentType = res.ContentType;
+    fileDetail.url = this.getFileUrl(file);
+    return fileDetail;
   }
+  async hasObject(file: FileInfo): Promise<boolean> {
+    try {
+      await this.headObject(file);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   private async getObjectTags(file: FileInfo) {
     const command = new GetObjectTaggingCommand({
       Bucket: file.bucket.name,
@@ -314,10 +333,13 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   }
   async cloneObject(file: FileInfo, newPath: string) {
     let newKey = newPath;
-    if (file.type.fileType === FileType.Folder && !newPath.endsWith("/")) {
+    if (
+      file.type.fileType === FileFormatType.Folder &&
+      !newPath.endsWith("/")
+    ) {
       newKey = newKey + "/";
     }
-    if (file.type.fileType === FileType.Folder) {
+    if (file.type.fileType === FileFormatType.Folder) {
       const allFiles = await this.getFilesRecursively(file.bucket, file.path);
       // clone folder first for empty folder case
       await this.copyObject(
@@ -364,11 +386,12 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   }
 
   async getObject(file: FileInfo, start?: number, end?: number) {
-    console.log("getObject", file.path, start, end);
+    const range = start || end ? `bytes=${start}-${end}` : undefined;
+    console.log("getObject", file.path, range);
     const command = new GetObjectCommand({
       Bucket: file.bucket.name,
       Key: file.path,
-      Range: start || end ? `bytes=${start}-${end}` : undefined,
+      Range: range,
       //ChecksumMode: "ENABLED",
     });
     return await this.client.send(command);
@@ -412,21 +435,11 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     await parallelUploads3.done();
   }
   async getFile(file: FileInfo): Promise<FileDetailInfo> {
-    const res = await this.headObject(file);
-    const fileDetail = { ...file } as FileDetailInfo;
-
+    const fileDetail = await this.headObject(file);
     if (this.storage.type === StorageType.AWSS3) {
       fileDetail.permission = await this.getObjectAcl(file);
       fileDetail.tags = await this.getObjectTags(file);
     }
-    fileDetail.size = res.ContentLength || fileDetail.size;
-    fileDetail.eTag = res.ETag;
-    fileDetail.serverSideEncryption = res.ServerSideEncryption;
-    fileDetail.versionId = res.VersionId;
-    fileDetail.acceptRanges = res.AcceptRanges;
-    fileDetail.metadata = res.Metadata;
-    fileDetail.contentType = res.ContentType;
-    fileDetail.url = this.getFileUrl(file);
     return fileDetail;
   }
 

@@ -3,7 +3,7 @@ import {
   GoogleCloudStorageInfo,
   StorageInfo,
   StorageType,
-} from "../../types";
+} from "#types";
 import { S3StorageClient } from "./S3StorageClient";
 import { GoogleStorageClient } from "./GoogleStorageClient";
 import { StorageClient } from "./StorageClient";

@@ -1,4 +1,4 @@
-import { FileInfo } from "./storage";
+import { FileInfo } from "./index";
 
 export interface JobInfo {
   id: string;

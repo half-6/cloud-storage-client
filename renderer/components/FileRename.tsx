@@ -1,4 +1,4 @@
-import { FileInfo, FolderFileType } from "../types";
+import { FileInfo, FolderFileType } from "#types";
 import {
   Button,
   Dialog,

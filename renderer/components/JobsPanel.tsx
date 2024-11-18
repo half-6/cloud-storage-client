@@ -1,4 +1,4 @@
-import { JobInfo, JobStatusInfo, JobTypeInfo } from "../types";
+import { JobInfo, JobStatusInfo, JobTypeInfo } from "#types";
 import {
   Box,
   CircularProgress,

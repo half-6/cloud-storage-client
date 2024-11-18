@@ -19,7 +19,7 @@ import {
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import React, { useEffect, useState } from "react";
 import { useAlertStore, useSystemStore } from "../store";
-import { AWSS3StorageInfo, BucketInfo, JobInfo, StorageInfo } from "../types";
+import { AWSS3StorageInfo, BucketInfo, JobInfo, StorageInfo } from "#types";
 import { SimpleTreeView, TreeItem2 } from "@mui/x-tree-view";
 import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";

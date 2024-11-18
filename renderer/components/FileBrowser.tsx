@@ -3,7 +3,7 @@ import {
   FileTypeIconMapping,
   FolderFileType,
   StorageInfo,
-} from "../types";
+} from "#types";
 import {
   DataGrid,
   GridActionsCellItem,

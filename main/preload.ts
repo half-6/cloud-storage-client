@@ -20,4 +20,8 @@ const handler = {
 
 contextBridge.exposeInMainWorld("ipc", handler);
 
+contextBridge.exposeInMainWorld("electron", {
+  startDrag: (fileName) => ipcRenderer.send("ondragstart", fileName),
+});
+
 export type IpcHandler = typeof handler;

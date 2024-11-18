@@ -15,7 +15,7 @@ import {
 } from "@mui/material";
 import Image from "next/image";
 import Grid from "@mui/material/Grid2";
-import { FileDetailInfo, FileInfo } from "../types";
+import { FileDetailInfo, FileInfo } from "#types";
 import React, { useEffect, useState } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Typography from "@mui/material/Typography";

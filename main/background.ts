@@ -1,11 +1,10 @@
 import path from "path";
-import fs from "fs";
 import { app, dialog, ipcMain, shell } from "electron";
 import serve from "electron-serve";
 import { createWindow, readLocalStorage, writeLocalStorage } from "./helpers";
-import { downloadFileInChunks } from "./helpers/downloadManager";
-import { JobDownloadInfo, JobInfo } from "../renderer/types";
-import { JobInfo1, JobStatusInfo1 } from "../renderer/types/jobInfo1";
+import { JobInfo, JobStatusInfo } from "#types";
+import { StorageClientFactory } from "#storageClient";
+import fs from "fs";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -62,29 +61,36 @@ ipcMain.on("show-save-file-dialog", async (event, args: { job: JobInfo }) => {
   });
   if (outputFilePath) {
     // can't use enum here, it will cause compile error
-    job.status = 0;
+    job.status = JobStatusInfo.loading;
     job.outputFilePath = outputFilePath;
-    job.progress.loaded = 0;
+    job.progress.loaded = -1;
     job.progress.percentage = 0;
     job.progress.total = job.file.size;
     event.reply("download-file-progress", {
       job,
     });
     try {
-      await downloadFileInChunks(job.file, outputFilePath, (progress) => {
-        job.progress.loaded = progress.transferred;
-        job.progress.percentage = progress.percentage;
-        job.progress.total = progress.length;
+      const writeStream = fs.createWriteStream(outputFilePath);
+      const client = StorageClientFactory.createClient(job.file.storage);
+      const oneMB = 1024 * 1024;
+      while (job.progress.loaded !== job.progress.total - 1) {
+        const start = job.progress.loaded + 1;
+        const end = start + oneMB;
+        const res = await client.downloadFileInChunks(job.file, start, end);
+        job.progress.loaded = res.progress.loaded;
+        job.progress.percentage = res.progress.percentage;
+        job.progress.total = res.progress.total;
+        writeStream.write(res.content);
         event.reply("download-file-progress", {
           job,
         });
-      });
-      job.status = 2;
+      }
+      job.status = JobStatusInfo.completed;
       event.reply("download-file-progress", {
         job,
       });
     } catch (e) {
-      job.status = 3;
+      job.status = JobStatusInfo.Failed;
       event.reply("download-file-progress", {
         job,
       });

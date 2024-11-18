@@ -1,4 +1,4 @@
-import { AWSS3StorageInfo, BucketInfo, StorageInfo } from "../types";
+import { AWSS3StorageInfo, BucketInfo, StorageInfo } from "#types";
 import { MouseEvent } from "react";
 import {
   CircularProgress,

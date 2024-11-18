@@ -8,9 +8,9 @@ import VideoFileOutlinedIcon from "@mui/icons-material/VideoFileOutlined";
 import AudioFileOutlinedIcon from "@mui/icons-material/AudioFileOutlined";
 import FolderZipOutlinedIcon from "@mui/icons-material/FolderZipOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
-import { getFileExtension } from "../lib";
+import { getFileExtension } from "#utility";
 
-export enum FileType {
+export enum FileFormatType {
   Folder,
   PDF,
   Image,
@@ -29,8 +29,8 @@ export enum FileType {
 export class FileTypeInfo {
   protected _name: string;
   protected _extension: string[];
-  protected _type: FileType;
-  constructor(name: string, extension: string[], type: FileType) {
+  protected _type: FileFormatType;
+  constructor(name: string, extension: string[], type: FileFormatType) {
     this._name = name;
     this._extension = extension;
     this._type = type;
@@ -41,11 +41,12 @@ export class FileTypeInfo {
   get extension(): string[] {
     return this._extension;
   }
-  get fileType(): FileType {
+  get fileType(): FileFormatType {
     return this._type;
   }
   static getFileType(fileName: string) {
-    const extension = getFileExtension(fileName);
+    const extension: string = getFileExtension(fileName);
+
     if (!extension) {
       return UnknownFileType;
     }
@@ -57,10 +58,10 @@ export class FileTypeInfo {
     return new FileTypeInfo(
       `${extension.toUpperCase()} File`,
       [extension],
-      FileType.Extension,
+      FileFormatType.Extension,
     );
   }
-  static getFileTypeInfo(fileType: FileType) {}
+  static getFileTypeInfo(fileType: FileFormatType) {}
   toString(): string {
     return this.name;
   }
@@ -69,71 +70,79 @@ export class FileTypeInfo {
 export const UnknownFileType = new FileTypeInfo(
   "Unknown File",
   [],
-  FileType.Unknown,
+  FileFormatType.Unknown,
 );
-export const PDFFileType = new FileTypeInfo("PDF File", ["PDF"], FileType.PDF);
+export const PDFFileType = new FileTypeInfo(
+  "PDF File",
+  ["PDF"],
+  FileFormatType.PDF,
+);
 export const FolderFileType = new FileTypeInfo(
   "File Folder",
   [],
-  FileType.Folder,
+  FileFormatType.Folder,
 );
 export const ImageFileType = new FileTypeInfo(
   "Image File",
   ["JPG", "JPEG", "PNG", "BMP", "GIF", "SVG"],
-  FileType.Image,
+  FileFormatType.Image,
 );
 export const FontFileType = new FileTypeInfo(
   "Font File",
   ["TTF", "OTF", "EOT", "WOFF", "WOFF2"],
-  FileType.Font,
+  FileFormatType.Font,
 );
 export const ApplicationFileType = new FileTypeInfo(
   "Application",
   ["EXE"],
-  FileType.Application,
+  FileFormatType.Application,
 );
 export const HTMLFileType = new FileTypeInfo(
   "HTML File",
   ["html"],
-  FileType.HTML,
+  FileFormatType.HTML,
 );
 export const JSFileType = new FileTypeInfo(
   "JS File",
   ["JS", "TS"],
-  FileType.JS,
+  FileFormatType.JS,
 );
-export const CSSFileType = new FileTypeInfo("CSS File", ["CSS"], FileType.CSS);
+export const CSSFileType = new FileTypeInfo(
+  "CSS File",
+  ["CSS"],
+  FileFormatType.CSS,
+);
 export const VideoFileType = new FileTypeInfo(
   "VIDEO File",
   ["MP4", "WMV", "AVI", "MOV", "MKV"],
-  FileType.Video,
+  FileFormatType.Video,
 );
 export const AudioFileType = new FileTypeInfo(
   "AUDIO File",
   ["MP3", "WAV", "AAC", "FLAC", "OGG"],
-  FileType.Audio,
+  FileFormatType.Audio,
 );
 
 export const CompressedFileType = new FileTypeInfo(
   "Compressed File",
   ["zip", "7Z", "GZIP", "TAR"],
-  FileType.Compressed,
+  FileFormatType.Compressed,
 );
 
 export const FileTypeIconMapping = {
-  [FileType.Folder]: FolderOutlinedIcon,
-  [FileType.PDF]: PictureAsPdfOutlinedIcon,
-  [FileType.Image]: ImageOutlinedIcon,
-  [FileType.Font]: TextSnippetOutlinedIcon,
-  [FileType.Application]: TextSnippetOutlinedIcon,
-  [FileType.HTML]: HtmlOutlinedIcon,
-  [FileType.JS]: JavascriptOutlinedIcon,
-  [FileType.CSS]: CssOutlinedIcon,
-  [FileType.Video]: VideoFileOutlinedIcon,
-  [FileType.Audio]: AudioFileOutlinedIcon,
-  [FileType.Compressed]: FolderZipOutlinedIcon,
-  [FileType.Unknown]: TextSnippetOutlinedIcon,
-  [FileType.Extension]: TextSnippetOutlinedIcon,
+  [FileFormatType.Folder]: FolderOutlinedIcon,
+  [FileFormatType.PDF]: PictureAsPdfOutlinedIcon,
+  [FileFormatType.Image]: ImageOutlinedIcon,
+  [FileFormatType.Font]: TextSnippetOutlinedIcon,
+  [FileFormatType.Application]: TextSnippetOutlinedIcon,
+  [FileFormatType.HTML]: HtmlOutlinedIcon,
+  [FileFormatType.JS]: JavascriptOutlinedIcon,
+  [FileFormatType.CSS]: CssOutlinedIcon,
+  [FileFormatType.Video]: VideoFileOutlinedIcon,
+  [FileFormatType.Audio]: AudioFileOutlinedIcon,
+  [FileFormatType.Compressed]: FolderZipOutlinedIcon,
+  [FileFormatType.Unknown]: TextSnippetOutlinedIcon,
+  [FileFormatType.Extension]: TextSnippetOutlinedIcon,
 };
 const FileTypeList = [
   PDFFileType,

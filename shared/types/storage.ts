@@ -1,4 +1,4 @@
-import { FileTypeInfo, S3PermissionInfo } from "./";
+import { FileTypeInfo, S3PermissionInfo } from "./index";
 import { BucketLocationConstraint } from "@aws-sdk/client-s3/";
 
 export enum StorageType {

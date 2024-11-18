@@ -5,7 +5,7 @@ import {
   JobDownloadInfo,
   JobProgressInfo,
   StorageInfo,
-} from "../../types";
+} from "#types";
 
 export abstract class StorageClient<T extends StorageInfo> {
   storage: T;
@@ -59,4 +59,7 @@ export abstract class StorageClient<T extends StorageInfo> {
 
   abstract renameObject(file: FileInfo, newFileName: string): Promise<FileInfo>;
   abstract cloneObject(file: FileInfo, newPath: string): Promise<FileInfo>;
+
+  abstract headObject(file: FileInfo): Promise<FileDetailInfo>;
+  abstract hasObject(file: FileInfo): Promise<boolean>;
 }

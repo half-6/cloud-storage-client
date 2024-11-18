@@ -1,4 +1,4 @@
-import { AWSS3StorageInfo, StorageInfo, StorageType } from "../types";
+import { AWSS3StorageInfo, StorageInfo, StorageType } from "#types";
 import {
   Box,
   Dialog,

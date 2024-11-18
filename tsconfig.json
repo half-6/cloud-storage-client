@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "esnext",
     "lib": [
       "dom",
       "dom.iterable",
@@ -23,20 +23,26 @@
         "name": "next"
       }
     ],
-//    "paths": {
-//      "@/*": ["./src/*"]
-//    }
+    "paths": {
+      "#types": ["./shared/types"],
+      "#types/*": ["./shared/types/*"],
+      "#storageClient": ["./shared/storageClient"],
+      "#storageClient/*": ["./shared/storageClient/*"],
+      "#utility": ["./shared/utility"],
+      "#utility/*": ["../shared/utility/*"]
+    },
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
   },
   "exclude": [
     "node_modules",
     "renderer/next.config.js",
+    "nextron.config.js",
     "app",
     "dist"
   ],
-//  "include": [
-//    "next-env.d.ts",
-//    ".next/types/**/*.ts",
-//    "**/*.ts",
-//    "**/*.tsx"
-//  ]
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
 }
