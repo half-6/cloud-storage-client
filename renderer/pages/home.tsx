@@ -31,7 +31,7 @@ import {
   MenuInfo,
   TreeItemInfo,
 } from "../components";
-import { useJobStore, useSystemStore } from "../store";
+import { useAlertStore, useJobStore, useSystemStore } from "../store";
 import useSWR from "swr";
 import { SnackbarProvider, enqueueSnackbar, useSnackbar } from "notistack";
 import { v4 } from "uuid";
@@ -76,6 +76,7 @@ export default function HomePage() {
   const [selectedFile, setSelectedFile] = useState<FileInfo>();
 
   const { enqueueSnackbar } = useSnackbar();
+  const { openConfirmAsync } = useAlertStore();
 
   const [loadedFileNumber, setLoadedFileNumber] = useState(0);
   const [showFileDetail, setShowFileDetail] = useState<boolean>(false);
@@ -210,8 +211,22 @@ export default function HomePage() {
   }
 
   async function handleUploadFile(file: File) {
-    const fileName = getNoneDuplicatedFileName(fileList, file.name);
+    const fileName = file.name;
     const uploadFilePath = prefix ? `${prefix}${fileName}` : fileName;
+    const client = StorageClientFactory.createClient(selectedStorage);
+    const exists = await client.hasObject({
+      bucket: selectedBucket,
+      name: fileName,
+      path: uploadFilePath,
+    } as FileInfo);
+    if (exists) {
+      const overwrite = await openConfirmAsync({
+        body: `The destination already have a file named ${fileName}, Do you want to replace it?`,
+      });
+      if (!overwrite) {
+        return;
+      }
+    }
     const newJob = {
       id: v4().toString(),
       name: file.name,
@@ -226,7 +241,7 @@ export default function HomePage() {
     } as JobInfo;
     jobs.push(newJob);
     setJobs(jobs);
-    await StorageClientFactory.createClient(selectedStorage).uploadFile(
+    await client.uploadFile(
       selectedBucket,
       uploadFilePath,
       file,

@@ -8,10 +8,12 @@ it is support AWS S3 for only, we will add more
 - Amazon S3 Compatible Storage
 - Google Storage (TBD)
 
-
 ## Features
-- Browse, Create, Delete files/folder from cloud storage.
+- Browse, Preview, Clone, Create, Delete files/folder from cloud storage.
 - Reliably Upload and Download your files/folder to and from cloud storage.
+
+## Overview
+![Alt text](example/Home.png)
 
 ## Development
 ### Requirements

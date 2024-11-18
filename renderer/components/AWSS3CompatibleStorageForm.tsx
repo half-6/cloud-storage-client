@@ -26,6 +26,7 @@ export const AWSS3CompatibleStorageForm = (
     formState: { errors },
   } = useForm();
   function handleOK(data) {
+    data.id = props.storage?.id;
     data.type = StorageType.AWSS3COMPATIBLE;
     props?.onSave(data);
   }
