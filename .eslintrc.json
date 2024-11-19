@@ -1,9 +1,9 @@
 {
   "extends": ["prettier","next/core-web-vitals","next","eslint:recommended","plugin:prettier/recommended"],
-//  "plugins": ["unused-imports"],
+  "plugins": ["unused-imports"],
   "rules": {
     "no-unused-vars": "off",
-//    "unused-imports/no-unused-imports": "error",
+    "unused-imports/no-unused-imports": "error",
     "sort-imports": [
       "error",
       {

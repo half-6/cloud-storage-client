@@ -5,7 +5,7 @@ import { AppCacheProvider } from "@mui/material-nextjs/v14-pagesRouter";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import theme from "../lib/theme";
-import { SnackbarProvider, enqueueSnackbar } from "notistack";
+import { SnackbarProvider } from "notistack";
 
 export default function MyApp(props: AppProps) {
   const { Component, pageProps } = props;

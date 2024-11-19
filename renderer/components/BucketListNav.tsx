@@ -1,4 +1,4 @@
-import { AWSS3StorageInfo, BucketInfo, StorageInfo } from "#types";
+import { AWSS3StorageInfo, BucketInfo } from "#types";
 import { MouseEvent } from "react";
 import {
   CircularProgress,
@@ -12,19 +12,15 @@ import {
   ListSubheader,
   Menu,
   MenuItem,
-  Typography,
 } from "@mui/material";
 import React, { useState } from "react";
 import CloudOutlinedIcon from "@mui/icons-material/CloudOutlined";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 import { TreeItemInfo } from "./BucketListDrawer";
-import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import FileCopyOutlinedIcon from "@mui/icons-material/FileCopyOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
-import { AWSS3BucketDialog } from "./AWSS3BucketDialog";
 import { StoragePanel } from "./StoragePanel";
 import { useAlertStore, useSystemStore } from "../store";
 import CreateNewFolderOutlinedIcon from "@mui/icons-material/CreateNewFolderOutlined";

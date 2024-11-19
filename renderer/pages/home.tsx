@@ -1,17 +1,9 @@
 import React, { useState } from "react";
-import { Box, Button, styled } from "@mui/material";
-import {
-  convertFileToBuffer,
-  getFileMime,
-  getNoneDuplicatedCloneFileName,
-  getNoneDuplicatedFileName,
-  useSWRAbort,
-} from "../lib";
+import { styled } from "@mui/material";
+import { getNoneDuplicatedCloneFileName, useSWRAbort } from "../lib";
 import { StorageClientFactory } from "#storageClient";
 import {
-  AWSS3StorageInfo,
   BucketInfo,
-  FileDetailInfo,
   FileInfo,
   FolderFileType,
   JobInfo,
@@ -21,7 +13,6 @@ import {
   StorageInfo,
 } from "#types";
 import {
-  Alert,
   BucketListDrawer,
   DrawerWidth,
   FileBrowser,
@@ -33,7 +24,7 @@ import {
 } from "../components";
 import { useAlertStore, useJobStore, useSystemStore } from "../store";
 import useSWR from "swr";
-import { SnackbarProvider, enqueueSnackbar, useSnackbar } from "notistack";
+import { useSnackbar } from "notistack";
 import { v4 } from "uuid";
 
 const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{

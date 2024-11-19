@@ -1,40 +1,24 @@
 import {
-  Box,
   Button,
-  CircularProgress,
-  Collapse,
   Divider,
   Drawer,
   IconButton,
-  List,
-  ListItemButton,
   ListItemIcon,
   ListItemText,
-  ListSubheader,
   Menu,
   MenuItem,
-  Paper,
   styled,
 } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import React, { useEffect, useState } from "react";
 import { useAlertStore, useSystemStore } from "../store";
-import { AWSS3StorageInfo, BucketInfo, JobInfo, StorageInfo } from "#types";
-import { SimpleTreeView, TreeItem2 } from "@mui/x-tree-view";
+import { BucketInfo, JobInfo, StorageInfo } from "#types";
 import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import FileCopyOutlinedIcon from "@mui/icons-material/FileCopyOutlined";
 import CloudOutlinedIcon from "@mui/icons-material/CloudOutlined";
-import MoreVertOutlinedIcon from "@mui/icons-material/MoreVertOutlined";
 import CreateNewFolderOutlinedIcon from "@mui/icons-material/CreateNewFolderOutlined";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { StoragePanel } from "./StoragePanel";
-import { IconLabel } from "./IconLabel";
 import { AWSS3BucketDialog } from "./AWSS3BucketDialog";
-import { ExpandLess, ExpandMore } from "@mui/icons-material";
-import { AccountListNav, BucketListNav } from "./BucketListNav";
+import { AccountListNav } from "./BucketListNav";
 import { JobsPanel } from "./JobsPanel";
 export interface TreeItemInfo {
   storage: StorageInfo;

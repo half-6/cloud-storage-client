@@ -8,15 +8,13 @@ import {
   DialogContent,
   DialogTitle,
   Link,
-  Paper,
   Tab,
   Tabs,
   TextField,
 } from "@mui/material";
-import Image from "next/image";
 import Grid from "@mui/material/Grid2";
-import { FileDetailInfo, FileInfo } from "#types";
-import React, { useEffect, useState } from "react";
+import { FileDetailInfo } from "#types";
+import React, { useEffect } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Typography from "@mui/material/Typography";
 import { formatFileSize, obj2array } from "../lib";

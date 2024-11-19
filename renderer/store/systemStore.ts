@@ -1,11 +1,6 @@
 import { create } from "zustand";
 import { v4 } from "uuid";
-import {
-  AWSS3StorageInfo,
-  FileInfo,
-  LocalStorageInfo,
-  StorageInfo,
-} from "#types";
+import { LocalStorageInfo, StorageInfo } from "#types";
 import { isIpcReady } from "../lib";
 export interface SystemStoreState {
   showDrawer: boolean;

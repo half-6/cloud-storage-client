@@ -7,57 +7,41 @@ import {
 import {
   DataGrid,
   GridActionsCellItem,
-  GridCellModes,
   GridColDef,
   GridLoadingOverlayProps,
-  GridRowModes,
-  GridSlotsComponentsProps,
-  GridToolbar,
   GridToolbarContainer,
-  GridToolbarDensitySelector,
   GridToolbarExport,
   GridToolbarProps,
   GridToolbarQuickFilter,
-  useGridApiContext,
   useGridApiRef,
 } from "@mui/x-data-grid";
 import {
   Box,
   Button,
   CircularProgress,
-  IconButton,
   ListItemIcon,
   ListItemText,
   Menu,
   MenuItem,
   Paper,
   Tooltip,
-  Typography,
   styled,
 } from "@mui/material";
 import OpenIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-import React, { useMemo, useRef, useState } from "react";
-import { convertFileToBuffer, formatFileSize, getFileName } from "../lib";
+import React, { useRef, useState } from "react";
+import { formatFileSize } from "../lib";
 import { IconLabel } from "./IconLabel";
-import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import DeleteOutlinedIcon from "@mui/icons-material/DeleteOutlined";
-import FileCopyOutlinedIcon from "@mui/icons-material/FileCopyOutlined";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import { useAlertStore } from "../store";
 import BlockIcon from "@mui/icons-material/Block";
 import AddIcon from "@mui/icons-material/Add";
-import FolderIcon from "@mui/icons-material/Folder";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
 import { FileRename } from "./FileRename";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
-import InsertDriveFileOutlinedIcon from "@mui/icons-material/InsertDriveFileOutlined";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import DownloadIcon from "@mui/icons-material/Download";
 import { NewFolderDialog } from "./NewFolderDialog";
 
