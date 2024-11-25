@@ -19,11 +19,15 @@ permissions:
 concurrency:
   group: "pages"
   cancel-in-progress: false
-
+env:
+  GH_TOKEN: ${{ secrets.github_token }}
 jobs:
-  # Build job
-  build:
-    runs-on: ubuntu-latest
+  # Release job
+  release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
