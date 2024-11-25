@@ -30,7 +30,7 @@ import { v4 } from "uuid";
 const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
   open?: boolean;
 }>(({ theme }) => ({
-  width: `calc(100% - ${DrawerWidth}px)`,
+  width: `100%`,
   // flexGrow: 1,
   padding: theme.spacing(3),
   marginTop: theme.spacing(8),
@@ -48,6 +48,7 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
           duration: theme.transitions.duration.enteringScreen,
         }),
         marginLeft: 0,
+        width: `calc(100% - ${DrawerWidth}px)`,
       },
     },
   ],
