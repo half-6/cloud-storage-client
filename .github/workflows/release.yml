@@ -65,5 +65,17 @@ jobs:
             ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json', '**/yarn.lock') }}-
       - name: Install dependencies
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
-      - name: Build with Nextron
-        run: ${{ steps.detect-package-manager.outputs.manager }} run build
+      - name: Build Next
+        run: ${{ steps.detect-package-manager.outputs.manager }} run build:next
+      - name: Build Node
+        run: ${{ steps.detect-package-manager.outputs.manager }} run build:node
+      - name: Build/release Electron app
+        uses: samuelmeuli/action-electron-builder@v1.6.0
+        with:
+          # GitHub token, automatically provided to the action
+          # (No need to define this secret in the repo settings)
+          github_token: ${{ secrets.github_token }}
+
+          # If the commit is tagged with a version (e.g. "v1.0.0"),
+          # release the app after building
+          release: ${{ startsWith(github.ref, 'refs/tags/v') }}
