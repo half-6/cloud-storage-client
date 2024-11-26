@@ -24,24 +24,12 @@
       }
     ],
     "paths": {
-      "#types": [
-        "./shared/types"
-      ],
-      "#types/*": [
-        "./shared/types/*"
-      ],
-      "#storageClient": [
-        "./shared/storageClient"
-      ],
-      "#storageClient/*": [
-        "./shared/storageClient/*"
-      ],
-      "#utility": [
-        "./shared/utility"
-      ],
-      "#utility/*": [
-        "../shared/utility/*"
-      ]
+      "#types": ["./shared/types"],
+      "#types/*": ["./shared/types/*"],
+      "#storageClient": ["./shared/storageClient"],
+      "#storageClient/*": ["./shared/storageClient/*"],
+      "#utility": ["./shared/utility"],
+      "#utility/*": ["../shared/utility/*"]
     },
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true
@@ -55,7 +43,6 @@
   ],
   "include": [
     "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts"
+    "**/*.tsx"
   ]
 }
