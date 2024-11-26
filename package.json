@@ -10,7 +10,7 @@
     "dev": "nextron",
     "build:next": "next build ./renderer",
     "build:node": "node ./node_modules/nextron/bin/webpack.config.js",
-    "build": "nextron build",
+    "build": "nextron build --publish always",
     "build:mac": "nextron build --mac",
     "build:mac:universal": "nextron build --mac --universal",
     "build:win32": "nextron build --win --ia32",
