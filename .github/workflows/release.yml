@@ -35,11 +35,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Next Lint
-        run: npm run lint:next
-      - name: Build Next
-        run: npm run build:next
-      - name: Build Node
-        run: npm run build:node
+        run: npm run lint:next ${{ secrets.github_token }}
       - name: Build/release Electron app
         uses: samuelmeuli/action-electron-builder@v1.6.0
         with:
