@@ -8,8 +8,6 @@
   "main": "app/background.js",
   "scripts": {
     "dev": "nextron",
-    "build:next": "next build ./renderer",
-    "build:node": "node ./node_modules/nextron/bin/webpack.config.js",
     "build": "nextron build --publish always",
     "build:mac": "nextron build --mac",
     "build:mac:universal": "nextron build --mac --universal",
@@ -58,14 +56,5 @@
     "ts-loader": "^9.5.1",
     "tsconfig-paths-webpack-plugin": "^4.1.0",
     "typescript": "^5.4.5"
-  },
-  "build": {
-    "mac": {
-      "icon": "resources/icon.png"
-    },
-    "win": {
-      "icon": "resources/icon.png"
-    },
-    "buildDependenciesFromSource": true
   }
 }

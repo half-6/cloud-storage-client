@@ -10,3 +10,22 @@ files:
       - package.json
       - app
 publish: null
+win:
+  icon: resources/icon.png
+  target:
+    - { target: nsis }
+    - { target: portable }
+    - { target: msi }
+nsis:
+  artifactName: ${name}-${os}-${arch}-installer-${version}.${ext}
+portable:
+  artifactName: ${name}-${os}-${arch}-portable-${version}.${ext}
+msi:
+  artifactName: ${name}-${os}-${arch}-${version}.${ext}
+mac:
+  artifactName: ${name}-${os}-${arch}-${version}.${ext}
+  icon: resources/icon.png
+  category: public.app-category.developer-tools
+  darkModeSupport: true
+
+buildDependenciesFromSource: true
