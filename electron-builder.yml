@@ -9,7 +9,6 @@ files:
     filter:
       - package.json
       - app
-publish: null
 win:
   icon: resources/icon.png
   target:
