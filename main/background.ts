@@ -5,6 +5,7 @@ import { createWindow, readLocalStorage, writeLocalStorage } from "./helpers";
 import { JobInfo, JobStatusInfo } from "#types";
 import { StorageClientFactory } from "#storageClient";
 import fs from "fs";
+import { autoUpdater } from "electron-updater";
 
 const isProd = process.env.NODE_ENV === "production";
 
@@ -37,6 +38,11 @@ if (isProd) {
 
 app.on("window-all-closed", () => {
   app.quit();
+});
+app.on("ready", () => {
+  autoUpdater.checkForUpdatesAndNotify().then(() => {
+    //update success
+  });
 });
 
 ipcMain.on("read-config", async (event, arg) => {

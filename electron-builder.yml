@@ -11,6 +11,9 @@ files:
       - app
 win:
   icon: resources/icon.png
+  publish:
+    - provider: github
+      protocol: https
   target:
     - { target: nsis }
     - { target: portable }
@@ -26,5 +29,8 @@ mac:
   icon: resources/icon.png
   category: public.app-category.developer-tools
   darkModeSupport: true
+  publish:
+    - provider: github
+      protocol: https
 
 buildDependenciesFromSource: true
