@@ -230,6 +230,12 @@ export default function HomePage() {
       } as JobProgressInfo,
       createdTime: new Date(),
       type: JobTypeInfo.upload,
+      file: {
+        storage: selectedStorage,
+        bucket: selectedBucket,
+        path: uploadFilePath,
+      },
+      localFilePath: file.path,
     } as JobInfo;
     jobs.push(newJob);
     setJobs(jobs);

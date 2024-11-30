@@ -6,7 +6,7 @@ import {
   FileInfo,
   FileTypeInfo,
   FolderFileType,
-  JobInfo,
+  JobDownloadInfo,
   JobProgressInfo,
   S3PermissionInfo,
   StorageType,
@@ -43,7 +43,7 @@ import {
   promiseAllInBatches,
   replaceFromEnd,
 } from "#utility";
-import { Progress, Upload } from "@aws-sdk/lib-storage";
+import { Upload } from "@aws-sdk/lib-storage";
 
 export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   client: S3Client;
@@ -387,7 +387,6 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
 
   async getObject(file: FileInfo, start?: number, end?: number) {
     const range = start || end ? `bytes=${start}-${end}` : undefined;
-    console.log("getObject", file.path, range);
     const command = new GetObjectCommand({
       Bucket: file.bucket.name,
       Key: file.path,
@@ -495,7 +494,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
         loaded: rangeAndLength.end,
         total: rangeAndLength.length,
       },
-    };
+    } as JobDownloadInfo;
   }
   //endregion
 

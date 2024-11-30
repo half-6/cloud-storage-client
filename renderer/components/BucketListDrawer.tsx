@@ -20,6 +20,7 @@ import { StoragePanel } from "./StoragePanel";
 import { AWSS3BucketDialog } from "./AWSS3BucketDialog";
 import { AccountListNav } from "./BucketListNav";
 import { JobsPanel } from "./JobsPanel";
+import { useSnackbar } from "notistack";
 export interface TreeItemInfo {
   storage: StorageInfo;
   buckets: BucketInfo[];
@@ -60,6 +61,7 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
   const [showStorageDialog, setShowStorageDialog] = useState(false);
   const [showBucketDialog, setShowBucketDialog] = useState(false);
   const [selectedTreeItem, setSelectedTreeItem] = useState<TreeItemInfo>(null);
+  const { enqueueSnackbar } = useSnackbar();
   const { openAlertAsync } = useAlertStore();
   const [newMenuAnchorEl, setNewMenuAnchorEl] =
     React.useState<null | HTMLElement>(null);
@@ -77,6 +79,9 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
     await props.onDeleteBucket(treeItem.storage, bucket);
     setTimeout(async () => {
       await handleRefreshBucketList(selectedTreeItem);
+      enqueueSnackbar(`Delete bucket ${bucket.name} success`, {
+        variant: "success",
+      });
     }, 500);
   };
 
@@ -120,8 +125,11 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
     } else {
       await props.onCreateBucket(selectedTreeItem.storage, bucket);
       setShowBucketDialog(false);
+      await handleRefreshBucketList(selectedTreeItem);
+      enqueueSnackbar(`Create bucket ${bucket.name} success`, {
+        variant: "success",
+      });
     }
-    await handleRefreshBucketList(selectedTreeItem);
   };
   useEffect(() => {
     setTreeItems(

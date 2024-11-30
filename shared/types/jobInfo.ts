@@ -9,7 +9,7 @@ export interface JobInfo {
   cancel?: () => void;
   createdTime: Date;
   type: JobTypeInfo;
-  outputFilePath?: string;
+  localFilePath?: string;
 }
 
 export enum JobStatusInfo {

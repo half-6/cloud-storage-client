@@ -11,6 +11,7 @@ import {
   ListSubheader,
   Menu,
   MenuItem,
+  Tooltip,
 } from "@mui/material";
 import React, { useState } from "react";
 import { useJobStore } from "../store";
@@ -22,6 +23,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import StopIcon from "@mui/icons-material/Stop";
 import PlayIcon from "@mui/icons-material/PlayArrow";
+import { getFileFullPath } from "#utility";
 
 function CircularProgressWithLabel(
   props: CircularProgressProps & { value: number },
@@ -77,8 +79,16 @@ export const JobsPanel = () => {
     deleteJob(selectedJob);
   };
   const handleOpenFileMenu = () => {
-    openFile(selectedJob.outputFilePath);
+    openFile(selectedJob.localFilePath);
     handleCloseMenu();
+  };
+  const getTitle = (job: JobInfo) => {
+    if (job.type === JobTypeInfo.download) {
+      return `Download file from ${getFileFullPath(job.file)} to ${job.localFilePath}`;
+    }
+    if (job.type === JobTypeInfo.upload) {
+      return `Upload file from ${job.localFilePath} to ${getFileFullPath(job.file)}`;
+    }
   };
   return (
     <>
@@ -102,17 +112,19 @@ export const JobsPanel = () => {
               {job.type === JobTypeInfo.download && <DownloadOutlinedIcon />}
               {job.type === JobTypeInfo.upload && <UploadOutlinedIcon />}
             </ListItemIcon>
-            <ListItemText
-              primary={job.name}
-              sx={{ textWrap: "nowrap" }}
-              primaryTypographyProps={{
-                sx: {
-                  textWrap: "nowrap",
-                  textOverflow: "ellipsis",
-                  overflow: "hidden",
-                },
-              }}
-            />
+            <Tooltip title={getTitle(job)}>
+              <ListItemText
+                primary={job.name}
+                sx={{ textWrap: "nowrap" }}
+                primaryTypographyProps={{
+                  sx: {
+                    textWrap: "nowrap",
+                    textOverflow: "ellipsis",
+                    overflow: "hidden",
+                  },
+                }}
+              />
+            </Tooltip>
             <ListItemIcon sx={{ minWidth: "auto", paddingRight: "5px" }}>
               {job.status === JobStatusInfo.loading && (
                 <CircularProgressWithLabel
@@ -153,22 +165,22 @@ export const JobsPanel = () => {
           horizontal: "right",
         }}
       >
-        {selectedJob && selectedJob.status === JobStatusInfo.loading && (
-          <MenuItem onClick={handleStopJobMenu}>
-            <ListItemIcon>
-              <StopIcon />
-            </ListItemIcon>
-            <ListItemText>Stop Job</ListItemText>
-          </MenuItem>
-        )}
-        {selectedJob && selectedJob.status === JobStatusInfo.pause && (
-          <MenuItem onClick={handlePlayJobMenu}>
-            <ListItemIcon>
-              <PlayIcon />
-            </ListItemIcon>
-            <ListItemText>Play Job</ListItemText>
-          </MenuItem>
-        )}
+        {/*{selectedJob && selectedJob.status === JobStatusInfo.loading && (*/}
+        {/*  <MenuItem onClick={handleStopJobMenu}>*/}
+        {/*    <ListItemIcon>*/}
+        {/*      <StopIcon />*/}
+        {/*    </ListItemIcon>*/}
+        {/*    <ListItemText>Stop Job</ListItemText>*/}
+        {/*  </MenuItem>*/}
+        {/*)}*/}
+        {/*{selectedJob && selectedJob.status === JobStatusInfo.pause && (*/}
+        {/*  <MenuItem onClick={handlePlayJobMenu}>*/}
+        {/*    <ListItemIcon>*/}
+        {/*      <PlayIcon />*/}
+        {/*    </ListItemIcon>*/}
+        {/*    <ListItemText>Play Job</ListItemText>*/}
+        {/*  </MenuItem>*/}
+        {/*)}*/}
         {selectedJob &&
           selectedJob.type === JobTypeInfo.download &&
           selectedJob.status === JobStatusInfo.completed && (
@@ -176,15 +188,17 @@ export const JobsPanel = () => {
               <ListItemIcon>
                 <EditIcon />
               </ListItemIcon>
-              <ListItemText>Open File</ListItemText>
+              <ListItemText>Open Local File</ListItemText>
             </MenuItem>
           )}
-        <MenuItem onClick={handleDeleteJobMenu}>
-          <ListItemIcon>
-            <DeleteIcon />
-          </ListItemIcon>
-          <ListItemText>Delete Job</ListItemText>
-        </MenuItem>
+        {selectedJob && selectedJob.status === JobStatusInfo.completed && (
+          <MenuItem onClick={handleDeleteJobMenu}>
+            <ListItemIcon>
+              <DeleteIcon />
+            </ListItemIcon>
+            <ListItemText>Delete Job</ListItemText>
+          </MenuItem>
+        )}
       </Menu>
     </>
   );

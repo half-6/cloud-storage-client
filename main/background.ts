@@ -6,8 +6,7 @@ import { JobInfo, JobStatusInfo } from "#types";
 import { StorageClientFactory } from "#storageClient";
 import fs from "fs";
 import { autoUpdater } from "electron-updater";
-
-const isProd = process.env.NODE_ENV === "production";
+import { isProd, log } from "#utility";
 
 if (isProd) {
   serve({ directory: "app" });
@@ -17,6 +16,8 @@ if (isProd) {
 
 (async () => {
   await app.whenReady();
+  log.initialize();
+  log.info("init app success");
   const mainWindow = createWindow("main", {
     width: 1000,
     height: 600,
@@ -66,9 +67,8 @@ ipcMain.on("show-save-file-dialog", async (event, args: { job: JobInfo }) => {
     defaultPath: job.file.name,
   });
   if (outputFilePath) {
-    // can't use enum here, it will cause compile error
     job.status = JobStatusInfo.loading;
-    job.outputFilePath = outputFilePath;
+    job.localFilePath = outputFilePath;
     job.progress.loaded = -1;
     job.progress.percentage = 0;
     job.progress.total = job.file.size;

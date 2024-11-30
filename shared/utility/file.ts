@@ -100,3 +100,11 @@ export async function streamToBase64(stream) {
       });
   });
 }
+
+export function getFileFullPath(file: FileInfo) {
+  const path = [];
+  path.push(file.storage.name);
+  path.push(file.bucket.name);
+  path.push(file.path);
+  return path.join("/");
+}

@@ -3,6 +3,7 @@ import React from "react";
 import Head from "next/head";
 import { Box } from "@mui/material";
 import { useAlertStore } from "../store";
+import { log } from "#utility";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -14,11 +15,13 @@ export const Layout = (props: LayoutProps) => {
     //it will show popup in DEV model
     window.addEventListener("error", (event) => {
       event.preventDefault();
+      log.error("Global Error", event.message);
       openAlertAsync({ body: event.message });
     });
     // if will work and show popup dialog after compile only
     window.addEventListener("unhandledrejection", (event) => {
       event.preventDefault();
+      log.error("Global Error", event.reason);
       openAlertAsync({ body: event.reason });
     });
   }
