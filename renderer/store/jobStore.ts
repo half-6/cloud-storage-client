@@ -16,23 +16,21 @@ export interface JobStoreState {
   setJobs: (jobs: JobInfo[]) => void;
   upsertJob: (job: JobInfo) => void;
   deleteJob: (job: JobInfo) => void;
-  downloadFile: (file: FileInfo) => void;
-  downloadFolder: (file: FileInfo) => void;
-  openFile: (filePath: string) => void;
 }
 export const useJobStore = create<JobStoreState>((set, get) => {
   if (isIpcReady()) {
     setTimeout(() => {
-      window.ipc.on("download-file-progress", (args: { job: JobInfo }) => {
+      window.ipc.on("file-progress", (args: { job: JobInfo }) => {
         const { job } = args;
         get().upsertJob(job);
+        const jobType = job.type === JobTypeInfo.upload ? "Upload" : "Download";
         if (job.status === JobStatusInfo.completed) {
-          enqueueSnackbar(`Download ${job.file.name} completed`, {
+          enqueueSnackbar(`${jobType} ${job.file.name} success`, {
             variant: "success",
           });
         }
         if (job.status === JobStatusInfo.Failed) {
-          enqueueSnackbar(`Download ${job.file.name} failed`, {
+          enqueueSnackbar(`${jobType} ${job.file.name} failed`, {
             variant: "error",
           });
         }
@@ -70,47 +68,6 @@ export const useJobStore = create<JobStoreState>((set, get) => {
           jobs: jobs,
         }));
       }
-    },
-    downloadFile: (file: FileInfo) => {
-      const cloneFile = deepClone(file) as FileInfo;
-      const job: JobInfo = {
-        id: v4().toString(),
-        name: cloneFile.name,
-        file: cloneFile,
-        status: JobStatusInfo.loading,
-        progress: {
-          loaded: 0,
-          total: file.size,
-          percentage: 0,
-        } as JobProgressInfo,
-        createdTime: new Date(),
-        type: JobTypeInfo.download,
-      };
-      window.ipc.send("show-save-file-dialog", {
-        job,
-      });
-    },
-    downloadFolder: (file: FileInfo) => {
-      const cloneFile = deepClone(file) as FileInfo;
-      const job: JobInfo = {
-        id: v4().toString(),
-        name: cloneFile.name,
-        file: cloneFile,
-        status: JobStatusInfo.loading,
-        progress: {
-          loaded: 0,
-          total: file.size,
-          percentage: 0,
-        } as JobProgressInfo,
-        createdTime: new Date(),
-        type: JobTypeInfo.download,
-      };
-      window.ipc.send("show-save-files-dialog", {
-        job,
-      });
-    },
-    openFile: (filePath: string) => {
-      window.ipc.send("open-file", filePath);
     },
   };
 });

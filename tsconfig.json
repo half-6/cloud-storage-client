@@ -26,8 +26,6 @@
     "paths": {
       "#types": ["./shared/types"],
       "#types/*": ["./shared/types/*"],
-      "#storageClient": ["./shared/storageClient"],
-      "#storageClient/*": ["./shared/storageClient/*"],
       "#utility": ["./shared/utility"],
       "#utility/*": ["../shared/utility/*"]
     },

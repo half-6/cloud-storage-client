@@ -1,13 +1,10 @@
 import path from "path";
 import { app, dialog, ipcMain, shell } from "electron";
 import serve from "electron-serve";
-import { createWindow, readLocalStorage, writeLocalStorage } from "./helpers";
-import { JobInfo, JobStatusInfo } from "#types";
-import { StorageClientFactory } from "#storageClient";
-import fs from "fs";
+import { createWindow } from "./helpers";
 import { autoUpdater } from "electron-updater";
 import { isProd, log } from "#utility";
-
+import "./ipcRegister";
 if (isProd) {
   serve({ directory: "app" });
 } else {
@@ -44,66 +41,4 @@ app.on("ready", () => {
   autoUpdater.checkForUpdatesAndNotify().then(() => {
     //update success
   });
-});
-
-ipcMain.on("read-config", async (event, arg) => {
-  event.reply("read-config", readLocalStorage());
-});
-
-ipcMain.on("write-config", async (event, arg) => {
-  writeLocalStorage(arg);
-  event.reply("write-config", true);
-});
-ipcMain.on("show-save-files-dialog", async (event, args: { job: JobInfo }) => {
-  const { job } = args;
-  const outputFolderPath = dialog.showSaveDialogSync({
-    defaultPath: job.file.name,
-    properties: ["createDirectory"],
-  });
-});
-ipcMain.on("show-save-file-dialog", async (event, args: { job: JobInfo }) => {
-  const { job } = args;
-  const outputFilePath = dialog.showSaveDialogSync({
-    defaultPath: job.file.name,
-  });
-  if (outputFilePath) {
-    job.status = JobStatusInfo.loading;
-    job.localFilePath = outputFilePath;
-    job.progress.loaded = -1;
-    job.progress.percentage = 0;
-    job.progress.total = job.file.size;
-    event.reply("download-file-progress", {
-      job,
-    });
-    try {
-      const writeStream = fs.createWriteStream(outputFilePath);
-      const client = StorageClientFactory.createClient(job.file.storage);
-      const oneMB = 1024 * 1024;
-      while (job.progress.loaded !== job.progress.total - 1) {
-        const start = job.progress.loaded + 1;
-        const end = start + oneMB;
-        const res = await client.downloadFileInChunks(job.file, start, end);
-        job.progress.loaded = res.progress.loaded;
-        job.progress.percentage = res.progress.percentage;
-        job.progress.total = res.progress.total;
-        writeStream.write(res.content);
-        event.reply("download-file-progress", {
-          job,
-        });
-      }
-      job.status = JobStatusInfo.completed;
-      event.reply("download-file-progress", {
-        job,
-      });
-    } catch (e) {
-      job.status = JobStatusInfo.Failed;
-      event.reply("download-file-progress", {
-        job,
-      });
-    }
-  }
-});
-
-ipcMain.on("open-file", async (event, args) => {
-  await shell.openPath(args);
 });

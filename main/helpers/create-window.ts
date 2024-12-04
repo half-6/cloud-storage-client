@@ -77,7 +77,7 @@ export const createWindow = (
       nodeIntegration: false,
       //nodeIntegration: true,
       contextIsolation: true,
-      webSecurity: false, //blocked by CORS policy
+      webSecurity: true, //blocked by CORS policy
       ...options.webPreferences,
     },
   });

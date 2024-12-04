@@ -17,7 +17,7 @@ import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOu
 import CloudOutlinedIcon from "@mui/icons-material/CloudOutlined";
 import CreateNewFolderOutlinedIcon from "@mui/icons-material/CreateNewFolderOutlined";
 import { StoragePanel } from "./StoragePanel";
-import { AWSS3BucketDialog } from "./AWSS3BucketDialog";
+import { BucketDialog } from "./BucketDialog";
 import { AccountListNav } from "./BucketListNav";
 import { JobsPanel } from "./JobsPanel";
 import { useSnackbar } from "notistack";
@@ -63,9 +63,6 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
   const [selectedTreeItem, setSelectedTreeItem] = useState<TreeItemInfo>(null);
   const { enqueueSnackbar } = useSnackbar();
   const { openAlertAsync } = useAlertStore();
-  const [newMenuAnchorEl, setNewMenuAnchorEl] =
-    React.useState<null | HTMLElement>(null);
-  const openNewMenu = Boolean(newMenuAnchorEl);
 
   const forceUpdate: () => void = React.useState({})[1].bind(null, {});
   const handleBucketClick = async (
@@ -103,17 +100,11 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
     setShowDrawer(false);
   };
 
-  const handleCloseNewMenu = () => {
-    setNewMenuAnchorEl(null);
-  };
-
   const handleNewAccountMenu = async () => {
     setSelectedTreeItem(null);
-    setNewMenuAnchorEl(null);
     setShowStorageDialog(true);
   };
   const handleNewBucketMenu = async () => {
-    setNewMenuAnchorEl(null);
     setShowBucketDialog(true);
   };
   const handleNewBucket = async (bucket: BucketInfo) => {
@@ -162,9 +153,7 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
         <Button
           variant="text"
           color="inherit"
-          onClick={(event) => {
-            setNewMenuAnchorEl(event.currentTarget);
-          }}
+          onClick={handleNewAccountMenu}
           startIcon={<AddCircleOutlineOutlinedIcon />}
         >
           New
@@ -188,7 +177,7 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
       <Divider />
       <JobsPanel />
 
-      <AWSS3BucketDialog
+      <BucketDialog
         bucket={null}
         storage={selectedTreeItem?.storage}
         show={showBucketDialog}
@@ -208,30 +197,6 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
           setShowStorageDialog(false);
         }}
       />
-      <Menu
-        id="new-menu"
-        anchorEl={newMenuAnchorEl}
-        open={openNewMenu}
-        onClose={handleCloseNewMenu}
-        MenuListProps={{
-          "aria-labelledby": "basic-button",
-        }}
-      >
-        <MenuItem onClick={handleNewAccountMenu}>
-          <ListItemIcon>
-            <CloudOutlinedIcon />
-          </ListItemIcon>
-          <ListItemText>New Account</ListItemText>
-        </MenuItem>
-        {selectedTreeItem && (
-          <MenuItem onClick={handleNewBucketMenu}>
-            <ListItemIcon>
-              <CreateNewFolderOutlinedIcon />
-            </ListItemIcon>
-            <ListItemText>New Bucket</ListItemText>
-          </MenuItem>
-        )}
-      </Menu>
     </Drawer>
   );
 };

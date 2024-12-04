@@ -4,13 +4,13 @@ import {
   FileDetailInfo,
   FileFormatType,
   FileInfo,
-  FileTypeInfo,
   FolderFileType,
   JobDownloadInfo,
   JobProgressInfo,
   S3PermissionInfo,
   StorageType,
   TagInfo,
+  getFileTypeByFileName,
 } from "#types";
 
 import { StorageClient } from "./StorageClient";
@@ -44,9 +44,11 @@ import {
   replaceFromEnd,
 } from "#utility";
 import { Upload } from "@aws-sdk/lib-storage";
+import fs from "fs";
 
 export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   client: S3Client;
+
   constructor(storage: AWSS3StorageInfo) {
     super(storage);
     this.client = new S3Client({
@@ -131,6 +133,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     const command = new CreateBucketCommand(input);
     await this.client.send(command);
   }
+
   async deleteBucket(bucket: BucketInfo) {
     const input = {
       Bucket: bucket.name,
@@ -152,11 +155,10 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
       Key: file.path,
     });
     await this.client.send(command);
-    file.storage = this.storage;
-    file.type = FolderFileType;
     file.lastModify = new Date();
     return file;
   }
+
   //endregion
 
   //region File list operation
@@ -171,19 +173,13 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     let nextContinuationToken: string | undefined = undefined;
     let index = 0;
     progress && progress(index);
-    const commandInput: {
-      Bucket: string;
-      Prefix: string;
-      Delimiter?: string;
-      ContinuationToken?: string;
-    } = {
-      Bucket: bucket.name,
-      Prefix: parentPath,
-      Delimiter: delimiter,
-    };
     do {
-      commandInput.ContinuationToken = nextContinuationToken;
-      const res = await this.getTop1000Files(commandInput);
+      const res = await this.getTop1000Files(
+        bucket,
+        parentPath,
+        delimiter,
+        nextContinuationToken,
+      );
       nextContinuationToken = res.nextToken;
       const currentRes = res.list.map((r, i) => {
         return {
@@ -199,15 +195,18 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     return output;
   }
 
-  private async getTop1000Files(commandInput: {
-    Bucket: string;
-    Prefix: string;
-    Delimiter?: string;
-    ContinuationToken?: string;
-  }) {
-    if (commandInput.Delimiter === undefined) {
-      commandInput.Delimiter = "/";
-    }
+  private async getTop1000Files(
+    bucket: BucketInfo,
+    parentPath: string,
+    continuationToken?: string,
+    delimiter?: string | undefined,
+  ) {
+    const commandInput = {
+      Bucket: bucket.name,
+      Prefix: parentPath,
+      Delimiter: delimiter ? delimiter : "/",
+      ContinuationToken: continuationToken,
+    };
     const command = new ListObjectsV2Command(commandInput);
     const res = await this.client.send(command);
     const list: FileInfo[] = [];
@@ -221,7 +220,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     res?.Contents?.forEach((file) => {
       if (commandInput?.Prefix?.toLowerCase() !== file.Key.toLowerCase()) {
         list.push({
-          type: FileTypeInfo.getFileType(file.Key),
+          type: getFileTypeByFileName(file.Key),
           name: getFileName(file.Key),
           lastModify: new Date(file.LastModified),
           size: file.Size,
@@ -234,6 +233,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
       nextToken: res?.NextContinuationToken,
     };
   }
+
   async getFilesRecursively(
     bucket: BucketInfo,
     parentPath: string,
@@ -242,6 +242,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   ): Promise<FileInfo[]> {
     return this.getFiles(bucket, parentPath, signal, progress, "");
   }
+
   //endregion
 
   //region Object operation
@@ -262,6 +263,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     fileDetail.url = this.getFileUrl(file);
     return fileDetail;
   }
+
   async hasObject(file: FileInfo): Promise<boolean> {
     try {
       await this.headObject(file);
@@ -284,6 +286,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
       } as TagInfo;
     });
   }
+
   private async getObjectAcl(file: FileInfo) {
     const command = new GetObjectAclCommand({
       Bucket: file.bucket.name,
@@ -292,8 +295,9 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     const res = await this.client.send(command);
     return res as S3PermissionInfo;
   }
+
   async deleteObject(file: FileInfo): Promise<void> {
-    if (file.type === FolderFileType) {
+    if (file.type.fileType === FileFormatType.Folder) {
       const allFiles = await this.getFilesRecursively(file.bucket, file.path);
       const keys = allFiles.map((item) => {
         return { Key: item.path };
@@ -331,6 +335,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     newFile.name = newFileName;
     return newFile;
   }
+
   async cloneObject(file: FileInfo, newPath: string) {
     let newKey = newPath;
     if (
@@ -395,22 +400,22 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     });
     return await this.client.send(command);
   }
+
   //endregion
 
   //region File operation
   async uploadFile(
-    bucket: BucketInfo,
-    uploadFilePath: string,
-    file: File,
+    file: FileInfo,
+    localFilePath: string,
     progress: ((progress: JobProgressInfo) => void) | undefined,
   ): Promise<void> {
-    const fileStream = await convertFileToBuffer(file);
+    const fileStream = fs.readFileSync(localFilePath);
     const fileType = await getFileMime(fileStream);
     const parallelUploads3 = new Upload({
       client: this.client,
       params: {
-        Bucket: bucket.name,
-        Key: uploadFilePath,
+        Bucket: file.bucket.name,
+        Key: file.path,
         Body: fileStream,
         ContentType: fileType?.mime || undefined,
       },
@@ -433,6 +438,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     });
     await parallelUploads3.done();
   }
+
   async getFile(file: FileInfo): Promise<FileDetailInfo> {
     const fileDetail = await this.headObject(file);
     if (this.storage.type === StorageType.AWSS3) {
@@ -473,6 +479,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     }
     return fileDetail;
   }
+
   getRangeAndLength = (contentRange) => {
     const [range, length] = contentRange.split("/");
     const [start, end] = range.split("-");
@@ -482,20 +489,20 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
       length: Number.parseInt(length),
     };
   };
+
   async downloadFileInChunks(file: FileInfo, start: number, end: number) {
     const { ContentRange, Body } = await this.getObject(file, start, end);
     const rangeAndLength = this.getRangeAndLength(ContentRange);
     return {
       content: await Body.transformToByteArray(),
       progress: {
-        percentage: Math.round(
-          (rangeAndLength.end / rangeAndLength.length) * 100,
-        ),
+        percentage: getPercentage(rangeAndLength.end, rangeAndLength.length),
         loaded: rangeAndLength.end,
         total: rangeAndLength.length,
       },
     } as JobDownloadInfo;
   }
+
   //endregion
 
   getFileUrl(file: FileInfo) {

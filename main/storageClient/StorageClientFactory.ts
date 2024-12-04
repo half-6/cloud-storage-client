@@ -1,6 +1,6 @@
 import {
   AWSS3StorageInfo,
-  GoogleCloudStorageInfo,
+  GoogleStorageInfo,
   StorageInfo,
   StorageType,
 } from "#types";
@@ -15,10 +15,12 @@ export class StorageClientFactory {
       case StorageType.AWSS3COMPATIBLE:
         return new S3StorageClient(storage as AWSS3StorageInfo);
       case StorageType.GoogleCloudStorage:
-        return new GoogleStorageClient(storage as GoogleCloudStorageInfo);
+        return new GoogleStorageClient(storage as GoogleStorageInfo);
     }
   }
+
   static cachedClient = new Map<string, StorageClient<StorageInfo>>();
+
   static createCachedClient(cacheKey: string, storage: StorageInfo) {
     if (this.cachedClient.has(cacheKey)) {
       return this.cachedClient.get(cacheKey);

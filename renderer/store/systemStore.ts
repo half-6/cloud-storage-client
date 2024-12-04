@@ -15,28 +15,28 @@ export interface SystemStoreState {
 export const useSystemStore = create<SystemStoreState>((set, get) => {
   if (isIpcReady()) {
     setTimeout(() => {
-      window.ipc.send("read-config", "read-config");
-      window.ipc.on("read-config", (message: LocalStorageInfo) => {
-        if (!message) {
-          message = {
-            Storages: [] as StorageInfo[],
-          };
-        }
-        //add id for edition
-        message.Storages = message.Storages.map((store, index) => {
-          return {
-            ...store,
-            id: store.id || v4().toString(),
-          };
-        });
-        console.log("read-config", message);
-        set(() => ({
-          localStorage: message,
-        }));
-      });
+      readConfig();
     });
   }
 
+  async function readConfig() {
+    let message = await window.config.read();
+    if (!message) {
+      message = {
+        Storages: [] as StorageInfo[],
+      };
+    }
+    //add id for edition
+    message.Storages = message.Storages.map((store, index) => {
+      return {
+        ...store,
+        id: store.id || v4().toString(),
+      };
+    });
+    set(() => ({
+      localStorage: message,
+    }));
+  }
   return {
     showDrawer: true,
     setShowDrawer: (show: boolean) => {
@@ -52,8 +52,9 @@ export const useSystemStore = create<SystemStoreState>((set, get) => {
         };
       });
       set({ localStorage: config });
-      console.log("write-config", config);
-      window.ipc.send("write-config", config);
+      window.config.write(config);
+      // console.log("write-config", config);
+      // window.ipc.send("write-config", config);
     },
     //storage
     addStorage: (storage: StorageInfo) => {

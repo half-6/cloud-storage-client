@@ -26,108 +26,74 @@ export enum FileFormatType {
   Unknown,
 }
 
-export class FileTypeInfo {
-  protected _name: string;
-  protected _extension: string[];
-  protected _type: FileFormatType;
-  constructor(name: string, extension: string[], type: FileFormatType) {
-    this._name = name;
-    this._extension = extension;
-    this._type = type;
-  }
-  get name(): string {
-    return this._name;
-  }
-  get extension(): string[] {
-    return this._extension;
-  }
-  get fileType(): FileFormatType {
-    return this._type;
-  }
-  static getFileType(fileName: string) {
-    const extension: string = getFileExtension(fileName);
-
-    if (!extension) {
-      return UnknownFileType;
-    }
-    for (let fileType of Object.values(FileTypeList)) {
-      if (fileType.extension.includes(extension)) {
-        return fileType;
-      }
-    }
-    return new FileTypeInfo(
-      `${extension.toUpperCase()} File`,
-      [extension],
-      FileFormatType.Extension,
-    );
-  }
-  static getFileTypeInfo(fileType: FileFormatType) {}
-  toString(): string {
-    return this.name;
-  }
+export interface FileTypeInfo {
+  name: string;
+  extension: string[];
+  fileType: FileFormatType;
 }
 
-export const UnknownFileType = new FileTypeInfo(
-  "Unknown File",
-  [],
-  FileFormatType.Unknown,
-);
-export const PDFFileType = new FileTypeInfo(
-  "PDF File",
-  ["PDF"],
-  FileFormatType.PDF,
-);
-export const FolderFileType = new FileTypeInfo(
-  "File Folder",
-  [],
-  FileFormatType.Folder,
-);
-export const ImageFileType = new FileTypeInfo(
-  "Image File",
-  ["JPG", "JPEG", "PNG", "BMP", "GIF", "SVG"],
-  FileFormatType.Image,
-);
-export const FontFileType = new FileTypeInfo(
-  "Font File",
-  ["TTF", "OTF", "EOT", "WOFF", "WOFF2"],
-  FileFormatType.Font,
-);
-export const ApplicationFileType = new FileTypeInfo(
-  "Application",
-  ["EXE"],
-  FileFormatType.Application,
-);
-export const HTMLFileType = new FileTypeInfo(
-  "HTML File",
-  ["html"],
-  FileFormatType.HTML,
-);
-export const JSFileType = new FileTypeInfo(
-  "JS File",
-  ["JS", "TS"],
-  FileFormatType.JS,
-);
-export const CSSFileType = new FileTypeInfo(
-  "CSS File",
-  ["CSS"],
-  FileFormatType.CSS,
-);
-export const VideoFileType = new FileTypeInfo(
-  "VIDEO File",
-  ["MP4", "WMV", "AVI", "MOV", "MKV"],
-  FileFormatType.Video,
-);
-export const AudioFileType = new FileTypeInfo(
-  "AUDIO File",
-  ["MP3", "WAV", "AAC", "FLAC", "OGG"],
-  FileFormatType.Audio,
-);
+export const UnknownFileType = {
+  name: "Unknown File",
+  extension: [],
+  fileType: FileFormatType.Unknown,
+} as FileTypeInfo;
 
-export const CompressedFileType = new FileTypeInfo(
-  "Compressed File",
-  ["zip", "7Z", "GZIP", "TAR"],
-  FileFormatType.Compressed,
-);
+export const PDFFileType = {
+  name: "PDF File",
+  extension: ["PDF"],
+  fileType: FileFormatType.PDF,
+};
+export const FolderFileType = {
+  name: "File Folder",
+  extension: [],
+  fileType: FileFormatType.Folder,
+};
+export const ImageFileType = {
+  name: "Image File",
+  extension: ["JPG", "JPEG", "PNG", "BMP", "GIF", "SVG"],
+  fileType: FileFormatType.Image,
+};
+export const FontFileType = {
+  name: "Font File",
+  extension: ["TTF", "OTF", "EOT", "WOFF", "WOFF2"],
+  fileType: FileFormatType.Font,
+};
+export const ApplicationFileType = {
+  name: "Application",
+  extension: ["EXE"],
+  fileType: FileFormatType.Application,
+};
+export const HTMLFileType = {
+  name: "HTML File",
+  extension: ["html"],
+  fileType: FileFormatType.HTML,
+};
+export const JSFileType = {
+  name: "JS File",
+  extension: ["JS", "TS"],
+  fileType: FileFormatType.JS,
+};
+export const CSSFileType = {
+  name: "CSS File",
+  extension: ["CSS"],
+  fileType: FileFormatType.CSS,
+};
+export const VideoFileType = {
+  name: "VIDEO File",
+  extension: ["MP4", "WMV", "AVI", "MOV", "MKV"],
+  fileType: FileFormatType.Video,
+};
+export const AudioFileType = {
+  name: "AUDIO File",
+  extension: ["MP3", "WAV", "AAC", "FLAC", "OGG"],
+  fileType: FileFormatType.Audio,
+};
+
+export const CompressedFileType = {
+  name: "Compressed File",
+  extension: ["zip", "7Z", "GZIP", "TAR"],
+  fileType: FileFormatType.Compressed,
+};
 
 export const FileTypeIconMapping = {
   [FileFormatType.Folder]: FolderOutlinedIcon,
@@ -156,3 +122,20 @@ const FileTypeList = [
   AudioFileType,
   CompressedFileType,
 ];
+
+export function getFileTypeByFileName(fileName: string) {
+  const extension: string = getFileExtension(fileName);
+  if (!extension) {
+    return UnknownFileType;
+  }
+  for (let fileType of Object.values(FileTypeList)) {
+    if (fileType.extension.includes(extension)) {
+      return fileType;
+    }
+  }
+  return {
+    name: `${extension.toUpperCase()} File`,
+    extension: [extension],
+    fileType: FileFormatType.Extension,
+  } as FileTypeInfo;
+}

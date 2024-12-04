@@ -4,6 +4,7 @@ import { getNoneDuplicatedCloneFileName, useSWRAbort } from "../lib";
 import { StorageClientFactory } from "#storageClient";
 import {
   BucketInfo,
+  FileFormatType,
   FileInfo,
   FolderFileType,
   JobInfo,
@@ -56,12 +57,6 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
 
 export default function HomePage() {
   const { showDrawer } = useSystemStore();
-  const {
-    downloadFile: downloadFileJob,
-    jobs,
-    setJobs,
-    downloadFolder: downloadFolderJob,
-  } = useJobStore();
   const [selectedStorage, setSelectedStorage] = useState<StorageInfo>();
   const [selectedBucket, setSelectedBucket] = useState<BucketInfo>();
   const [prefix, setPrefix] = useState<string>(null);
@@ -136,13 +131,14 @@ export default function HomePage() {
         Bucket: bucketName,
         Prefix: px,
       };
-      const output = await StorageClientFactory.createClient(
-        selectedStorage,
-      ).getFiles(selectedBucket, px, signal, (progress) => {
-        setLoadedFileNumber(progress);
-      });
-      setLoadedFileNumber(0);
-      return output;
+      return await StorageClientFactory.createClient(selectedStorage).getFiles(
+        selectedBucket,
+        px,
+        signal,
+        (progress) => {
+          setLoadedFileNumber(progress);
+        },
+      );
     }
     return null;
   }
@@ -166,6 +162,8 @@ export default function HomePage() {
       name: newFolderName,
       path: prefix ? `${prefix}${newFolderName}` : newFolderName,
       bucket: selectedBucket,
+      storage: selectedStorage,
+      type: FolderFileType,
     } as FileInfo);
     await reloadFiles();
     enqueueSnackbar(`Create new folder ${newFolderName} success`, {
@@ -207,6 +205,7 @@ export default function HomePage() {
     const uploadFilePath = prefix ? `${prefix}${fileName}` : fileName;
     const client = StorageClientFactory.createClient(selectedStorage);
     const exists = await client.hasObject({
+      storage: selectedStorage,
       bucket: selectedBucket,
       name: fileName,
       path: uploadFilePath,
@@ -219,58 +218,31 @@ export default function HomePage() {
         return;
       }
     }
-    const newJob = {
-      id: v4().toString(),
-      name: file.name,
-      status: JobStatusInfo.loading,
-      progress: {
-        loaded: 0,
-        total: file.size,
-        percentage: 0,
-      } as JobProgressInfo,
-      createdTime: new Date(),
-      type: JobTypeInfo.upload,
-      file: {
+    await client.uploadFile(
+      {
         storage: selectedStorage,
         bucket: selectedBucket,
         path: uploadFilePath,
-      },
-      localFilePath: file.path,
-    } as JobInfo;
-    jobs.push(newJob);
-    setJobs(jobs);
-    await client.uploadFile(
-      selectedBucket,
-      uploadFilePath,
-      file,
-      (progress) => {
-        const existJob = jobs.find((job) => job.id === newJob.id);
-        if (existJob) {
-          existJob.progress.percentage = progress.percentage;
-          existJob.progress.loaded = progress.loaded;
-          existJob.progress.total = progress.total;
-          setJobs(jobs);
-        }
-      },
+        name: file.name,
+      } as FileInfo,
+      file.path,
     );
-    await reloadFiles();
-    const existJob = jobs.find((job) => job.id === newJob.id);
-    if (existJob) {
-      existJob.progress.percentage = 100;
-      existJob.status = JobStatusInfo.completed;
-      setJobs(jobs);
-      enqueueSnackbar(`Upload ${file.name} success`, {
-        variant: "success",
-      });
-    }
+    //it has delay on google cloud after upload
+    setTimeout(async () => {
+      await reloadFiles();
+    }, 500);
   }
 
   async function handleDownloadFile(file: FileInfo) {
-    downloadFileJob(file);
+    const localFilePath = await window.dialog.showSaveDialog(file.name);
+    if (localFilePath) {
+      await StorageClientFactory.createClient(
+        selectedStorage,
+      ).downloadFileInChunks(file, localFilePath);
+    }
   }
-  async function handleDownloadFolder(file: FileInfo) {
-    downloadFolderJob(file);
-  }
+
+  async function handleDownloadFolder(file: FileInfo) {}
 
   async function handleDeleteObject(file: FileInfo) {
     await StorageClientFactory.createClient(selectedStorage).deleteObject(file);
@@ -325,7 +297,7 @@ export default function HomePage() {
           onAbout={handleFileListAbout}
           onFileClick={(file) => {
             setSelectedFile(file);
-            if (file.type === FolderFileType) {
+            if (file.type.fileType === FileFormatType.Folder) {
               fileListAbort();
               setPrefix(file.path);
             } else {
@@ -334,7 +306,7 @@ export default function HomePage() {
           }}
           onEditFile={(file) => {
             setSelectedFile(file);
-            if (file.type === FolderFileType) {
+            if (file.type.fileType === FileFormatType.Folder) {
               fileListAbort();
               setPrefix(file.path);
             } else {

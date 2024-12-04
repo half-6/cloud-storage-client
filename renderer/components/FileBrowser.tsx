@@ -1,4 +1,5 @@
 import {
+  FileFormatType,
   FileInfo,
   FileTypeIconMapping,
   FolderFileType,
@@ -254,6 +255,9 @@ export const FileBrowser = (props: FileBrowserProps) => {
       field: "type",
       headerName: "Type",
       width: 120,
+      renderCell: (params) => {
+        return <>{params.value.name}</>;
+      },
     },
     {
       field: "size",
@@ -298,7 +302,7 @@ export const FileBrowser = (props: FileBrowserProps) => {
             showInMenu
           />,
         ];
-        if (file.type !== FolderFileType) {
+        if (file.type.fileType !== FileFormatType.Folder) {
           menu = [
             <GridActionsCellItem
               label="Preview"

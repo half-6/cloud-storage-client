@@ -9,9 +9,11 @@ import {
 
 export abstract class StorageClient<T extends StorageInfo> {
   storage: T;
+
   constructor(storage: T) {
     this.storage = storage;
   }
+
   //bucket operation
   abstract getBuckets(
     signal?: AbortSignal,
@@ -19,6 +21,7 @@ export abstract class StorageClient<T extends StorageInfo> {
   ): Promise<BucketInfo[]>;
 
   abstract createBucket(bucket: BucketInfo): Promise<void>;
+
   abstract deleteBucket(bucket: BucketInfo): Promise<void>;
 
   //file Operation
@@ -29,6 +32,17 @@ export abstract class StorageClient<T extends StorageInfo> {
     progress?: (progress: number) => void,
     delimiter?: string,
   ): Promise<FileInfo[]>;
+
+  abstract getTop1000Files(
+    bucket: BucketInfo,
+    parentPath: string,
+    continuationToken?: string,
+    delimiter?: string | undefined,
+  ): Promise<{
+    list: FileInfo[];
+    nextToken: string;
+  }>;
+
   abstract getFilesRecursively(
     bucket: BucketInfo,
     parentPath: string,
@@ -37,9 +51,8 @@ export abstract class StorageClient<T extends StorageInfo> {
   ): Promise<FileInfo[]>;
 
   abstract uploadFile(
-    bucket: BucketInfo,
-    uploadFilePath: string,
-    file: File,
+    file: FileInfo,
+    localFilePath: string,
     progress?: (progress: JobProgressInfo) => void,
   ): Promise<void>;
 
@@ -51,6 +64,7 @@ export abstract class StorageClient<T extends StorageInfo> {
   abstract getFile(file: FileInfo): Promise<FileDetailInfo>;
 
   abstract downloadFile(file: FileInfo): Promise<FileDetailInfo>;
+
   abstract downloadFileInChunks(
     file: FileInfo,
     start: number,
@@ -58,8 +72,10 @@ export abstract class StorageClient<T extends StorageInfo> {
   ): Promise<JobDownloadInfo>;
 
   abstract renameObject(file: FileInfo, newFileName: string): Promise<FileInfo>;
+
   abstract cloneObject(file: FileInfo, newPath: string): Promise<FileInfo>;
 
   abstract headObject(file: FileInfo): Promise<FileDetailInfo>;
+
   abstract hasObject(file: FileInfo): Promise<boolean>;
 }

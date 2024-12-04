@@ -61,7 +61,7 @@ export const FilePreview = (props: FilePreviewProps) => {
   }, [props.show]);
   return (
     <Dialog maxWidth={"lg"} fullWidth={true} open={props.show}>
-      <DialogTitle>{props.file?.path}</DialogTitle>
+      <DialogTitle>{props.file?.name}</DialogTitle>
       <DialogContent sx={{ minHeight: "400px" }}>
         <Tabs
           value={tab}
@@ -73,9 +73,13 @@ export const FilePreview = (props: FilePreviewProps) => {
         >
           <Tab label="Overview" {...a11yProps(0)} />
           <Tab label="Preview" {...a11yProps(1)} />
-          <Tab label="Tags" {...a11yProps(2)} />
-          <Tab label="Metadata " {...a11yProps(3)} />
-          <Tab label="Permissions" {...a11yProps(4)} />
+          {props.file?.tags?.length > 0 && (
+            <Tab label="Tags" {...a11yProps(2)} />
+          )}
+          {obj2array(props.file?.metadata).length > 0 && (
+            <Tab label="Tags" {...a11yProps(3)} />
+          )}
+          {/*<Tab label="Permissions" {...a11yProps(4)} />*/}
         </Tabs>
         <TabPanel value={tab} index={0}>
           <Grid container spacing={2}>
@@ -198,7 +202,7 @@ export const FilePreview = (props: FilePreviewProps) => {
             hideFooter={true}
           />
         </TabPanel>
-        <TabPanel value={tab} index={4}></TabPanel>
+        {/*<TabPanel value={tab} index={4}></TabPanel>*/}
       </DialogContent>
       <DialogActions>
         <Button onClick={handleOK}>Close</Button>

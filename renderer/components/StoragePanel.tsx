@@ -1,10 +1,16 @@
-import { AWSS3StorageInfo, StorageInfo, StorageType } from "#types";
+import {
+  AWSS3StorageInfo,
+  GoogleStorageInfo,
+  StorageInfo,
+  StorageType,
+} from "#types";
 import { Dialog, Tab, Tabs, useMediaQuery, useTheme } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   AWSS3CompatibleStorageForm,
   AWSS3StorageForm,
+  GoogleStorageForm,
   TabPanel,
   a11yProps,
 } from "./";
@@ -77,6 +83,7 @@ export const StoragePanel = (props: StoragePanelProps) => {
       >
         <Tab label="Amazon S3 Storage" {...a11yProps(0)} />
         <Tab label="S3 Compatible Storage" {...a11yProps(1)} />
+        <Tab label="Google Storage" {...a11yProps(2)} />
       </Tabs>
       <TabPanel value={tab} index={0}>
         <AWSS3StorageForm
@@ -88,6 +95,13 @@ export const StoragePanel = (props: StoragePanelProps) => {
       <TabPanel value={tab} index={1}>
         <AWSS3CompatibleStorageForm
           storage={props.storage as AWSS3StorageInfo}
+          onSave={handleOK}
+          onClose={handleClose}
+        />
+      </TabPanel>
+      <TabPanel value={tab} index={2}>
+        <GoogleStorageForm
+          storage={props.storage as GoogleStorageInfo}
           onSave={handleOK}
           onClose={handleClose}
         />

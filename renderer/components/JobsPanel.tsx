@@ -57,7 +57,7 @@ function CircularProgressWithLabel(
 }
 
 export const JobsPanel = () => {
-  const { jobs, deleteJob, openFile } = useJobStore();
+  const { jobs, deleteJob } = useJobStore();
   const [selectedJob, setSelectedJob] = useState<JobInfo>(null);
   const [jobMenuAnchorEl, setJobMenuAnchorEl] = React.useState<null | Element>(
     null,
@@ -79,7 +79,7 @@ export const JobsPanel = () => {
     deleteJob(selectedJob);
   };
   const handleOpenFileMenu = () => {
-    openFile(selectedJob.localFilePath);
+    window.dialog.openFile(selectedJob.localFilePath);
     handleCloseMenu();
   };
   const getTitle = (job: JobInfo) => {

@@ -19,17 +19,20 @@ export interface AWSS3StorageInfo extends StorageInfo {
   endpoint?: string;
   secretAccessKey: string;
 }
-export interface GoogleCloudStorageInfo extends StorageInfo {
-  region: string;
-  endpoint: string;
-  accessKeyId: string;
-  secretAccessKey: string;
+
+export interface GoogleStorageInfo extends StorageInfo {
+  //endpoint: string;
+  projectId: string;
 }
 
 export interface BucketInfo {
   name: string;
-  region?: BucketLocationConstraint;
+  region?: string;
   createDate: Date;
+}
+
+export interface GoogleBucketInfo extends BucketInfo {
+  storageClass?: string;
 }
 
 export interface FileInfo {
