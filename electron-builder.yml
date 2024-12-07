@@ -15,9 +15,9 @@ win:
     - provider: github
       protocol: https
   target:
-    - { target: nsis }
-    - { target: portable }
-    - { target: msi }
+    - { target: nsis, arch: [ "x64","ia32" ] }
+    - { target: portable, arch: [ "x64","ia32" ] }
+    - { target: msi, arch: [ "x64","ia32" ] }
 nsis:
   artifactName: ${name}-${os}-${arch}-installer-${version}.${ext}
 portable:
@@ -32,5 +32,8 @@ mac:
   publish:
     - provider: github
       protocol: https
-
+  target:
+    - { target: dmg, arch: [ "universal" ] }
+    - { target: zip, arch: [ "universal" ] }
+    - { target: pkg, arch: [ "universal" ] }
 buildDependenciesFromSource: true

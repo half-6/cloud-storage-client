@@ -1,14 +1,18 @@
 import { AWSS3StorageInfo, StorageType } from "#types";
 import {
+  Box,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Link,
   TextField,
 } from "@mui/material";
 import Button from "@mui/material/Button";
 import React from "react";
 import { useForm } from "react-hook-form";
+import Typography from "@mui/material/Typography";
+import { HelpButton } from "../HelpButton";
 
 interface AWSS3CompatibleStorageFormProps {
   storage: AWSS3StorageInfo;
@@ -35,7 +39,51 @@ export const AWSS3CompatibleStorageForm = (
   };
   return (
     <form noValidate onSubmit={handleSubmit(handleOK)}>
-      <DialogTitle>S3 Compatible Storage Account Setting</DialogTitle>
+      <DialogTitle
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          paddingTop: 0
+        }}
+      >
+        <Typography variant="h6">
+          S3 Compatible Storage Account Setting
+        </Typography>
+        <HelpButton>
+          <Box
+            sx={{
+              padding: 0,
+              margin: 1,
+              backgroundColor: "transparent"
+            }}
+          >
+            <Typography variant="subtitle1">
+              How to setup authentication
+            </Typography>
+            <Typography variant="body2">
+              Access keys are long-term credentials for an IAM user or the AWS
+              account root user. You can use access keys to sign programmatic
+              requests to the AWS CLI or AWS API (directly or using the AWS SDK)
+            </Typography>
+            <Typography variant="body2" sx={{ paddingTop: 1 }}>
+              Access keys consist of two parts: an <b>access key ID</b> and a{" "}
+              <b>secret access key</b>. You must use both the access key ID and
+              secret access key together to authenticate your requests.
+            </Typography>
+            <Typography variant="body2" sx={{ paddingTop: 1 }}>
+              See more details at{" "}
+              <Link
+                sx={{ color: "white", textDecoration: "underline" }}
+                href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html"
+                target="_blank"
+              >
+                manage access keys
+              </Link>
+            </Typography>
+          </Box>
+        </HelpButton>
+      </DialogTitle>
       <DialogContent>
         <DialogContentText>
           Enter account details and click Save, it support Cloudflare R2

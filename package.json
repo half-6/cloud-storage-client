@@ -2,7 +2,7 @@
   "private": true,
   "name": "cloud-storage-manager",
   "description": "Cloud Storage Manager",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "author": "Jun Zhang <half_6@hotmail.com>",
   "license": "MIT",
   "main": "app/background.js",

@@ -14,3 +14,4 @@ export * from "./Layout";
 export * from "./TabPanel";
 export * from "./storageForm/";
 export * from "./bucketForm/";
+export * from "./HelpButton";
