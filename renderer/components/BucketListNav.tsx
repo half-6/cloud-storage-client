@@ -239,7 +239,6 @@ export const AccountListNav = (props: AccountListNavProps) => {
           width: "100%",
           maxWidth: 360,
           bgcolor: "background.paper",
-          overflowY: "auto",
         }}
         component="nav"
         subheader={

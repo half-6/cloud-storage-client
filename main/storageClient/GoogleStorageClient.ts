@@ -22,8 +22,6 @@ import {
   promiseAllInBatches,
   replaceFromEnd,
 } from "#utility";
-import { CopyObjectCommand } from "@aws-sdk/client-s3";
-import * as stream from "stream";
 import fs from "fs";
 
 export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
@@ -202,16 +200,14 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
       const res = await this.getTop1000Files(
         bucket,
         parentPath,
-        delimiter,
         nextContinuationToken,
+        delimiter,
       );
       nextContinuationToken = res.nextToken;
       const currentRes = res.list.map((r, i) => {
         return {
           ...r,
           id: ++index,
-          bucket,
-          storage: this.storage,
         } as FileInfo;
       });
       output.push(...currentRes);
@@ -226,7 +222,7 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
     continuationToken?: string,
     delimiter?: string | undefined,
   ): Promise<{ list: FileInfo[]; nextToken: string }> {
-    if (!delimiter) {
+    if (delimiter === undefined) {
       delimiter = "/";
     }
     let [files, res] = await this.client.bucket(bucket.name).getFiles({
@@ -240,7 +236,7 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
       files = files.filter((f) => f.name !== parentPath);
     }
     const list = files.map((file) => {
-      if (file.name.endsWith(delimiter)) {
+      if (file.name.endsWith("/")) {
         return {
           name: getFileName(file.name),
           storage: this.storage,
@@ -256,7 +252,7 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
         bucket: bucket,
         path: file.name,
         type: getFileTypeByFileName(file.name), // file.metadata.contentType
-        size: file.metadata.size,
+        size: Number(file.metadata.size),
         lastModify: new Date(file.metadata.updated),
       } as FileInfo;
     });

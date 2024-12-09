@@ -177,16 +177,14 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
       const res = await this.getTop1000Files(
         bucket,
         parentPath,
-        delimiter,
         nextContinuationToken,
+        delimiter,
       );
       nextContinuationToken = res.nextToken;
       const currentRes = res.list.map((r, i) => {
         return {
           ...r,
           id: ++index,
-          bucket,
-          storage: this.storage,
         } as FileInfo;
       });
       output.push(...currentRes);
@@ -201,10 +199,13 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     continuationToken?: string,
     delimiter?: string | undefined,
   ) {
+    if (delimiter === undefined) {
+      delimiter = "/";
+    }
     const commandInput = {
       Bucket: bucket.name,
       Prefix: parentPath,
-      Delimiter: delimiter ? delimiter : "/",
+      Delimiter: delimiter,
       ContinuationToken: continuationToken,
     };
     const command = new ListObjectsV2Command(commandInput);
@@ -215,16 +216,33 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
         type: FolderFileType,
         name: getFileName(folder.Prefix),
         path: folder.Prefix,
+        storage: this.storage,
+        bucket: bucket,
+        size: 0,
       } as FileInfo);
     });
     res?.Contents?.forEach((file) => {
-      if (commandInput?.Prefix?.toLowerCase() !== file.Key.toLowerCase()) {
+      if (commandInput?.Prefix?.toLowerCase() === file.Key.toLowerCase()) {
+        return;
+      }
+      if (file.Key.endsWith("/")) {
+        list.push({
+          type: FolderFileType,
+          name: getFileName(file.Key),
+          path: file.Key,
+          storage: this.storage,
+          bucket: bucket,
+          size: 0,
+        } as FileInfo);
+      } else {
         list.push({
           type: getFileTypeByFileName(file.Key),
           name: getFileName(file.Key),
           lastModify: new Date(file.LastModified),
           size: file.Size,
           path: file.Key,
+          storage: this.storage,
+          bucket: bucket,
         } as FileInfo);
       }
     });
@@ -496,7 +514,10 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     return {
       content: await Body.transformToByteArray(),
       progress: {
-        percentage: getPercentage(rangeAndLength.end, rangeAndLength.length),
+        percentage: getPercentage(
+          rangeAndLength.end,
+          rangeAndLength.length - 1,
+        ),
         loaded: rangeAndLength.end,
         total: rangeAndLength.length,
       },

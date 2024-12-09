@@ -3,9 +3,11 @@ import {
   Box,
   CircularProgress,
   CircularProgressProps,
+  Collapse,
   IconButton,
   List,
   ListItem,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
   ListSubheader,
@@ -13,17 +15,23 @@ import {
   MenuItem,
   Tooltip,
 } from "@mui/material";
-import React, { useState } from "react";
+import React, { MouseEvent, useState } from "react";
 import { useJobStore } from "../store";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import UploadOutlinedIcon from "@mui/icons-material/UploadOutlined";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
+import PauseCircleOutlineOutlinedIcon from "@mui/icons-material/PauseCircleOutlineOutlined";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import StopIcon from "@mui/icons-material/Stop";
 import PlayIcon from "@mui/icons-material/PlayArrow";
 import { getFileFullPath } from "#utility";
+import { TreeItemInfo } from "./BucketListDrawer";
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
+import DownloadIcon from "@mui/icons-material/Download";
+import UploadIcon from "@mui/icons-material/Upload";
 
 function CircularProgressWithLabel(
   props: CircularProgressProps & { value: number },
@@ -82,13 +90,9 @@ export const JobsPanel = () => {
     window.dialog.openFile(selectedJob.localFilePath);
     handleCloseMenu();
   };
-  const getTitle = (job: JobInfo) => {
-    if (job.type === JobTypeInfo.download) {
-      return `Download file from ${getFileFullPath(job.file)} to ${job.localFilePath}`;
-    }
-    if (job.type === JobTypeInfo.upload) {
-      return `Upload file from ${job.localFilePath} to ${getFileFullPath(job.file)}`;
-    }
+  const handleOnJobMoreClick = (event: MouseEvent, job: JobInfo) => {
+    setSelectedJob(job);
+    setJobMenuAnchorEl(event.currentTarget);
   };
   return (
     <>
@@ -97,7 +101,6 @@ export const JobsPanel = () => {
           width: "100%",
           maxWidth: 360,
           bgcolor: "background.paper",
-          overflowY: "auto",
         }}
         component="nav"
         subheader={
@@ -107,45 +110,11 @@ export const JobsPanel = () => {
         }
       >
         {jobs?.map((job, index) => (
-          <ListItem key={index}>
-            <ListItemIcon sx={{ minWidth: "auto", paddingRight: "10px" }}>
-              {job.type === JobTypeInfo.download && <DownloadOutlinedIcon />}
-              {job.type === JobTypeInfo.upload && <UploadOutlinedIcon />}
-            </ListItemIcon>
-            <Tooltip title={getTitle(job)}>
-              <ListItemText
-                primary={job.name}
-                sx={{ textWrap: "nowrap" }}
-                primaryTypographyProps={{
-                  sx: {
-                    textWrap: "nowrap",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                  },
-                }}
-              />
-            </Tooltip>
-            <ListItemIcon sx={{ minWidth: "auto", paddingRight: "5px" }}>
-              {job.status === JobStatusInfo.loading && (
-                <CircularProgressWithLabel
-                  size="20px"
-                  value={job.progress?.percentage || 0}
-                />
-              )}
-              {job.status === JobStatusInfo.completed && (
-                <CheckCircleOutlinedIcon />
-              )}
-            </ListItemIcon>
-            <IconButton
-              onClick={async (event) => {
-                event.stopPropagation();
-                setSelectedJob(job);
-                setJobMenuAnchorEl(event.currentTarget);
-              }}
-            >
-              <MoreVertIcon fontSize="small" />
-            </IconButton>
-          </ListItem>
+          <JobPanel
+            job={job}
+            onMoreAction={handleOnJobMoreClick}
+            key={job.id}
+          />
         ))}
       </List>
       <Menu
@@ -181,16 +150,14 @@ export const JobsPanel = () => {
         {/*    <ListItemText>Play Job</ListItemText>*/}
         {/*  </MenuItem>*/}
         {/*)}*/}
-        {selectedJob &&
-          selectedJob.type === JobTypeInfo.download &&
-          selectedJob.status === JobStatusInfo.completed && (
-            <MenuItem onClick={handleOpenFileMenu}>
-              <ListItemIcon>
-                <EditIcon />
-              </ListItemIcon>
-              <ListItemText>Open Local File</ListItemText>
-            </MenuItem>
-          )}
+        {selectedJob && selectedJob.status === JobStatusInfo.completed && (
+          <MenuItem onClick={handleOpenFileMenu}>
+            <ListItemIcon>
+              <EditIcon />
+            </ListItemIcon>
+            <ListItemText>Open Local File</ListItemText>
+          </MenuItem>
+        )}
         {selectedJob && selectedJob.status === JobStatusInfo.completed && (
           <MenuItem onClick={handleDeleteJobMenu}>
             <ListItemIcon>
@@ -200,6 +167,128 @@ export const JobsPanel = () => {
           </MenuItem>
         )}
       </Menu>
+    </>
+  );
+};
+
+interface JobPanelProps {
+  job: JobInfo;
+  onMoreAction: (event: MouseEvent, job: JobInfo) => void;
+}
+
+export const JobPanel = (props: JobPanelProps) => {
+  const [openSubJobs, setOpenSubJobs] = useState<boolean>(false);
+  const getTitle = (job: JobInfo) => {
+    if (job.type === JobTypeInfo.download) {
+      return `Download file from ${getFileFullPath(job.file)} to ${job.localFilePath}`;
+    }
+    if (job.type === JobTypeInfo.upload) {
+      return `Upload file from ${job.localFilePath} to ${getFileFullPath(job.file)}`;
+    }
+  };
+  return (
+    <>
+      <ListItem>
+        <ListItemIcon sx={{ minWidth: "auto", paddingRight: "10px" }}>
+          {props.job.status === JobStatusInfo.loading && (
+            <CircularProgressWithLabel
+              size="20px"
+              value={props.job.progress?.percentage || 0}
+            />
+          )}
+          {props.job.status === JobStatusInfo.completed &&
+            props.job.type === JobTypeInfo.download && <DownloadOutlinedIcon />}
+          {props.job.status === JobStatusInfo.completed &&
+            props.job.type === JobTypeInfo.upload && <UploadOutlinedIcon />}
+          {props.job.status === JobStatusInfo.failed && (
+            <Tooltip title={props.job.error}>
+              <CancelOutlinedIcon />
+            </Tooltip>
+          )}
+          {props.job.status === JobStatusInfo.pause && (
+            <PauseCircleOutlineOutlinedIcon />
+          )}
+        </ListItemIcon>
+        <Tooltip title={getTitle(props.job)}>
+          <ListItemText
+            primary={props.job.name}
+            sx={{ textWrap: "nowrap" }}
+            primaryTypographyProps={{
+              sx: {
+                textWrap: "nowrap",
+                textOverflow: "ellipsis",
+                overflow: "hidden",
+              },
+            }}
+          />
+        </Tooltip>
+        <IconButton
+          onClick={(event) => {
+            event.stopPropagation();
+            props.onMoreAction(event, props.job);
+          }}
+        >
+          <MoreVertIcon fontSize="small" />
+        </IconButton>
+        {props.job?.subJobs?.length > 0 && (
+          <IconButton
+            onClick={() => {
+              setOpenSubJobs(!openSubJobs);
+            }}
+          >
+            {openSubJobs ? <ExpandLess /> : <ExpandMore />}
+          </IconButton>
+        )}
+      </ListItem>
+      <Collapse in={openSubJobs} timeout="auto" unmountOnExit>
+        <List component="div" disablePadding>
+          {props.job.subJobs?.map((subjob, index) => (
+            <ListItem key={subjob.id} sx={{ padding: "3px 10px 3px 50px" }}>
+              <ListItemIcon sx={{ minWidth: "auto", paddingRight: "10px" }}>
+                {subjob.status === JobStatusInfo.loading && (
+                  <CircularProgressWithLabel
+                    size="20px"
+                    value={subjob.progress?.percentage || 0}
+                  />
+                )}
+                {subjob.status === JobStatusInfo.completed && (
+                  <CheckCircleOutlinedIcon />
+                )}
+                {subjob.status === JobStatusInfo.failed && (
+                  <Tooltip title={subjob.error}>
+                    <CancelOutlinedIcon />
+                  </Tooltip>
+                )}
+                {subjob.status === JobStatusInfo.pause && (
+                  <PauseCircleOutlineOutlinedIcon />
+                )}
+              </ListItemIcon>
+              <Tooltip title={getTitle(subjob)}>
+                <ListItemText
+                  primary={subjob.name}
+                  sx={{ textWrap: "nowrap" }}
+                  primaryTypographyProps={{
+                    fontSize: 14,
+                    sx: {
+                      textWrap: "nowrap",
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                    },
+                  }}
+                />
+              </Tooltip>
+              <IconButton
+                onClick={async (event) => {
+                  event.stopPropagation();
+                  props.onMoreAction(event, subjob);
+                }}
+              >
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+            </ListItem>
+          ))}
+        </List>
+      </Collapse>
     </>
   );
 };

@@ -8,9 +8,9 @@ import {
   JobTypeInfo,
   StorageInfo,
 } from "#types";
-import { StorageClientFactory } from "../storageClient";
+import { StorageClientFactory, download } from "../storageClient";
 import { v4 } from "uuid";
-import fs from "fs";
+
 //region bucket
 ipcMain.handle("get-buckets", async (event, storage: StorageInfo) => {
   return await StorageClientFactory.createClient(storage).getBuckets();
@@ -141,48 +141,10 @@ ipcMain.handle("download-file", async (event, file: FileInfo) => {
 ipcMain.handle(
   "download-file-in-chunks",
   async (event, file: FileInfo, localFilePath: string) => {
-    const job = {
-      id: v4().toString(),
-      name: file.name,
-      status: JobStatusInfo.loading,
-      progress: {
-        loaded: -1,
-        total: file.size,
-        percentage: 0,
-      } as JobProgressInfo,
-      createdTime: new Date(),
-      type: JobTypeInfo.download,
-      file: file,
-      localFilePath: localFilePath,
-    } as JobInfo;
-    event.sender.send("file-progress", {
-      job,
+    await download(file, localFilePath, (job: JobInfo) => {
+      event.sender.send("file-progress", {
+        job,
+      });
     });
-    try {
-      const writeStream = fs.createWriteStream(localFilePath);
-      const client = StorageClientFactory.createClient(job.file.storage);
-      const oneMB = 1024 * 1024;
-      while (job.progress.percentage !== 100) {
-        const start = job.progress.loaded + 1;
-        const end = start + oneMB;
-        const res = await client.downloadFileInChunks(job.file, start, end);
-        job.progress.loaded = res.progress.loaded;
-        job.progress.percentage = res.progress.percentage;
-        job.progress.total = res.progress.total;
-        writeStream.write(res.content);
-        event.sender.send("file-progress", {
-          job,
-        });
-      }
-      job.status = JobStatusInfo.completed;
-      event.sender.send("file-progress", {
-        job,
-      });
-    } catch (e) {
-      job.status = JobStatusInfo.Failed;
-      event.sender.send("file-progress", {
-        job,
-      });
-    }
   },
 );

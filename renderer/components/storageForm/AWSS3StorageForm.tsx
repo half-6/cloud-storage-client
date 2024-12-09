@@ -12,7 +12,7 @@ import {
   Tooltip,
   TooltipProps,
   styled,
-  tooltipClasses
+  tooltipClasses,
 } from "@mui/material";
 import Button from "@mui/material/Button";
 import React from "react";
@@ -47,7 +47,7 @@ export const AWSS3StorageForm = (props: AWSS3StorageFormProps) => {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
-          paddingTop: 0
+          paddingTop: 0,
         }}
       >
         <Typography variant="h6">Amazon S3 Storage Account Setting</Typography>
@@ -56,7 +56,7 @@ export const AWSS3StorageForm = (props: AWSS3StorageFormProps) => {
             sx={{
               padding: 0,
               margin: 1,
-              backgroundColor: "transparent"
+              backgroundColor: "transparent",
             }}
           >
             <Typography variant="subtitle1">

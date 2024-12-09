@@ -25,11 +25,12 @@ export const useJobStore = create<JobStoreState>((set, get) => {
         get().upsertJob(job);
         const jobType = job.type === JobTypeInfo.upload ? "Upload" : "Download";
         if (job.status === JobStatusInfo.completed) {
-          enqueueSnackbar(`${jobType} ${job.file.name} success`, {
+          const msg = job.error || `${jobType} ${job.file.name} success`;
+          enqueueSnackbar(msg, {
             variant: "success",
           });
         }
-        if (job.status === JobStatusInfo.Failed) {
+        if (job.status === JobStatusInfo.failed) {
           enqueueSnackbar(`${jobType} ${job.file.name} failed`, {
             variant: "error",
           });
@@ -46,7 +47,13 @@ export const useJobStore = create<JobStoreState>((set, get) => {
       });
     },
     deleteJob: (job: JobInfo) => {
-      const newJobs = get().jobs.filter((s) => s !== job);
+      let newJobs = get().jobs.filter((s) => s !== job);
+      newJobs = newJobs.map((a) => {
+        return {
+          ...a,
+          subJobs: a.subJobs.filter((s) => s !== job),
+        };
+      });
       get().setJobs(newJobs);
     },
     upsertJob: (job: JobInfo) => {

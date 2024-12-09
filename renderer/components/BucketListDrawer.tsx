@@ -1,4 +1,5 @@
 import {
+  Box,
   Button,
   Divider,
   Drawer,
@@ -163,19 +164,25 @@ export const BucketListDrawer = (props: BucketListDrawerProps) => {
         </IconButton>
       </DrawerHeader>
       <Divider />
-      <AccountListNav
-        treeItems={treeItems}
-        onStorageClick={handleStorageClick}
-        onBucketClick={handleBucketClick}
-        onRefreshBucketList={handleRefreshBucketList}
-        onDeleteBucket={handleDeleteBucket}
-        onNewBucket={async (treeItem) => {
-          setSelectedTreeItem(treeItem);
-          await handleNewBucketMenu();
+      <Box
+        sx={{
+          overflowY: "auto",
         }}
-      />
-      <Divider />
-      <JobsPanel />
+      >
+        <AccountListNav
+          treeItems={treeItems}
+          onStorageClick={handleStorageClick}
+          onBucketClick={handleBucketClick}
+          onRefreshBucketList={handleRefreshBucketList}
+          onDeleteBucket={handleDeleteBucket}
+          onNewBucket={async (treeItem) => {
+            setSelectedTreeItem(treeItem);
+            await handleNewBucketMenu();
+          }}
+        />
+        <Divider />
+        <JobsPanel />
+      </Box>
 
       <BucketDialog
         bucket={null}

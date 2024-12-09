@@ -242,7 +242,17 @@ export default function HomePage() {
     }
   }
 
-  async function handleDownloadFolder(file: FileInfo) {}
+  async function handleDownloadFolder(file: FileInfo) {
+    const localFilePath = await window.dialog.showSaveDialog(file.name, [
+      "createDirectory",
+      "showOverwriteConfirmation",
+    ]);
+    if (localFilePath) {
+      await StorageClientFactory.createClient(
+        selectedStorage,
+      ).downloadFileInChunks(file, localFilePath);
+    }
+  }
 
   async function handleDeleteObject(file: FileInfo) {
     await StorageClientFactory.createClient(selectedStorage).deleteObject(file);

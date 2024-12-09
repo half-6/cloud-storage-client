@@ -321,18 +321,18 @@ export const FileBrowser = (props: FileBrowserProps) => {
             />,
           ];
         }
-        // if (file.type === FolderFileType) {
-        //   menu = [
-        //     ...menu,
-        //     <GridActionsCellItem
-        //       label="Download"
-        //       key={3}
-        //       icon={<DownloadIcon fontSize="small" />}
-        //       onClick={() => handleDownloadFolder(file)}
-        //       showInMenu
-        //     />,
-        //   ];
-        // }
+        if (file.type.fileType === FileFormatType.Folder) {
+          menu = [
+            ...menu,
+            <GridActionsCellItem
+              label="Download"
+              key={3}
+              icon={<DownloadIcon fontSize="small" />}
+              onClick={() => handleDownloadFolder(file)}
+              showInMenu
+            />,
+          ];
+        }
         return menu;
       },
     },

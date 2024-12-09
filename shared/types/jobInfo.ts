@@ -10,13 +10,15 @@ export interface JobInfo {
   createdTime: Date;
   type: JobTypeInfo;
   localFilePath?: string;
+  subJobs: JobInfo[];
+  error: string;
 }
 
 export enum JobStatusInfo {
   loading,
   pause,
   completed,
-  Failed,
+  failed,
 }
 export enum JobTypeInfo {
   upload,
