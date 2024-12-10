@@ -33,7 +33,7 @@ mac:
     - provider: github
       protocol: https
   target:
-    - { target: dmg, arch: [ "universal" ] }
-    - { target: zip, arch: [ "universal" ] }
-    - { target: pkg, arch: [ "universal" ] }
+    - { target: dmg, arch: [ "universal","arm64","x64" ] }
+    - { target: zip, arch: [ "universal","arm64","x64" ] }
+    - { target: pkg, arch: [ "universal","arm64","x64" ] }
 buildDependenciesFromSource: true
