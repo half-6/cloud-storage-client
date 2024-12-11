@@ -8,7 +8,7 @@
   "main": "app/background.js",
   "scripts": {
     "dev": "nextron",
-    "build": "nextron build",
+    "build": "nextron build --publish always",
     "release": "nextron build --publish always",
     "build:mac": "nextron build --mac",
     "build:mac:universal": "nextron build --mac --universal",
