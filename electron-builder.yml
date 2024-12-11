@@ -17,7 +17,6 @@ win:
   target:
     - { target: nsis, arch: [ "x64","ia32" ] }
     - { target: portable, arch: [ "x64","ia32" ] }
-    - { target: msi, arch: [ "x64","ia32" ] }
 nsis:
   artifactName: ${name}-${os}-${arch}-installer-${version}.${ext}
 portable:
@@ -35,5 +34,4 @@ mac:
   target:
     - { target: dmg, arch: [ "arm64","x64" ] }
     - { target: zip, arch: [ "arm64","x64" ] }
-    - { target: pkg, arch: [ "arm64","x64" ] }
 buildDependenciesFromSource: true
