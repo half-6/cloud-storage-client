@@ -1,15 +1,6 @@
 import { ipcMain } from "electron";
-import {
-  BucketInfo,
-  FileInfo,
-  JobInfo,
-  JobProgressInfo,
-  JobStatusInfo,
-  JobTypeInfo,
-  StorageInfo,
-} from "#types";
-import { StorageClientFactory, download } from "../storageClient";
-import { v4 } from "uuid";
+import { BucketInfo, FileInfo, JobInfo, StorageInfo } from "#types";
+import { StorageClientFactory, download, upload } from "../storageClient";
 
 //region bucket
 ipcMain.handle("get-buckets", async (event, storage: StorageInfo) => {
@@ -97,38 +88,11 @@ ipcMain.handle(
 ipcMain.handle(
   "upload-file",
   async (event, file: FileInfo, localFilePath: string) => {
-    const job = {
-      id: v4().toString(),
-      name: file.name,
-      status: JobStatusInfo.loading,
-      progress: {
-        loaded: -1,
-        total: 0,
-        percentage: 0,
-      } as JobProgressInfo,
-      createdTime: new Date(),
-      type: JobTypeInfo.upload,
-      file: file,
-      localFilePath: localFilePath,
-    } as JobInfo;
-    event.sender.send("file-progress", {
-      job,
+    await upload(file, localFilePath, (job: JobInfo) => {
+      event.sender.send("file-progress", {
+        job,
+      });
     });
-    await StorageClientFactory.createClient(file.storage).uploadFile(
-      file,
-      localFilePath,
-      (progress) => {
-        job.progress = progress;
-        event.sender.send("file-progress", {
-          job,
-        });
-      },
-    );
-    job.status = JobStatusInfo.completed;
-    event.sender.send("file-progress", {
-      job,
-    });
-    return true;
   },
 );
 

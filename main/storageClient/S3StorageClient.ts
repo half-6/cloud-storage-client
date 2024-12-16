@@ -45,6 +45,7 @@ import {
 } from "#utility";
 import { Upload } from "@aws-sdk/lib-storage";
 import fs from "fs";
+import { buildCloudPath } from "./";
 
 export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   client: S3Client;
@@ -147,8 +148,8 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
 
   //region Folder operation
   async createFolder(file: FileInfo) {
-    if (!file.path.endsWith("/")) {
-      file.path = file.path + "/";
+    if (!file.path.endsWith(StorageClient.defaultDelimiter)) {
+      file.path = file.path + StorageClient.defaultDelimiter;
     }
     const command = new PutObjectCommand({
       Bucket: file.bucket.name,
@@ -193,14 +194,14 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     return output;
   }
 
-  private async getTop1000Files(
+  async getTop1000Files(
     bucket: BucketInfo,
     parentPath: string,
     continuationToken?: string,
     delimiter?: string | undefined,
   ) {
     if (delimiter === undefined) {
-      delimiter = "/";
+      delimiter = StorageClient.defaultDelimiter;
     }
     const commandInput = {
       Bucket: bucket.name,
@@ -225,7 +226,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
       if (commandInput?.Prefix?.toLowerCase() === file.Key.toLowerCase()) {
         return;
       }
-      if (file.Key.endsWith("/")) {
+      if (file.Key.endsWith(StorageClient.defaultDelimiter)) {
         list.push({
           type: FolderFileType,
           name: getFileName(file.Key),
@@ -358,9 +359,9 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     let newKey = newPath;
     if (
       file.type.fileType === FileFormatType.Folder &&
-      !newPath.endsWith("/")
+      !newPath.endsWith(StorageClient.defaultDelimiter)
     ) {
-      newKey = newKey + "/";
+      newKey = newKey + StorageClient.defaultDelimiter;
     }
     if (file.type.fileType === FileFormatType.Folder) {
       const allFiles = await this.getFilesRecursively(file.bucket, file.path);
@@ -402,7 +403,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   ) {
     const command = new CopyObjectCommand({
       Bucket: newBucket,
-      CopySource: sourceBucket + "/" + sourcePath,
+      CopySource: buildCloudPath(sourceBucket, sourcePath),
       Key: newPath,
     });
     return await this.client.send(command);

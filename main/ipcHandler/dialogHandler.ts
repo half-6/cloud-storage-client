@@ -10,9 +10,29 @@ const handler = {
       | "showOverwriteConfirmation"
       | "dontAddToRecent"
     >,
-  ) {
+  ): Promise<string> {
     return await ipcRenderer.invoke(
       "show-save-dialog",
+      defaultPath,
+      properties,
+    );
+  },
+  async showOpenDialog(
+    defaultPath: string,
+    properties?: Array<
+      | "openFile"
+      | "openDirectory"
+      | "multiSelections"
+      | "showHiddenFiles"
+      | "createDirectory"
+      | "promptToCreate"
+      | "noResolveAliases"
+      | "treatPackageAsDirectory"
+      | "dontAddToRecent"
+    >,
+  ): Promise<string[]> {
+    return await ipcRenderer.invoke(
+      "show-open-dialog",
       defaultPath,
       properties,
     );

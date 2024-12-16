@@ -39,7 +39,7 @@ export interface FileInfo {
   name: string;
   storage: StorageInfo;
   bucket: BucketInfo;
-  lastModify: Date;
+  lastModify?: Date;
   size?: number;
   path: string;
   type: FileTypeInfo;

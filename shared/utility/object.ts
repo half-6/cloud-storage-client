@@ -27,7 +27,7 @@ export function obj2array(obj: any) {
   }));
 }
 
-export async function asyncFilter(array, predicate) {
+export async function asyncFilter(array: any[], predicate) {
   const results = await Promise.all(array.map(predicate));
   return array.filter((_, index) => results[index]);
 }
@@ -38,7 +38,7 @@ export function chunkArray(a: any[], n: number) {
   );
 }
 
-export async function promiseAllInBatches(promises, batchSize) {
+export async function promiseAllInBatches(promises: any[], batchSize: number) {
   const res = [];
   for (let i = 0; i < promises.length; i += batchSize) {
     const batch = promises.slice(i, i + batchSize);

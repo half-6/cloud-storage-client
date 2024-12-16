@@ -1,6 +1,10 @@
 import React, { useState } from "react";
 import { styled } from "@mui/material";
-import { getNoneDuplicatedCloneFileName, useSWRAbort } from "../lib";
+import {
+  getFileName,
+  getNoneDuplicatedCloneFileName,
+  useSWRAbort,
+} from "../lib";
 import { StorageClientFactory } from "#storageClient";
 import {
   BucketInfo,
@@ -12,6 +16,7 @@ import {
   JobStatusInfo,
   JobTypeInfo,
   StorageInfo,
+  UnknownFileType,
 } from "#types";
 import {
   BucketListDrawer,
@@ -200,8 +205,48 @@ export default function HomePage() {
     });
   }
 
-  async function handleUploadFile(file: File) {
-    const fileName = file.name;
+  async function handleUploadFolder() {
+    const filePaths = await window.dialog.showOpenDialog("", ["openDirectory"]);
+    if (!filePaths) return;
+    const filePath = filePaths[0];
+    const fileName = getFileName(filePath);
+    const uploadFilePath = prefix ? `${prefix}${fileName}/` : `${fileName}/`;
+    const client = StorageClientFactory.createClient(selectedStorage);
+    const exists = await client.hasObject({
+      storage: selectedStorage,
+      bucket: selectedBucket,
+      name: fileName,
+      path: uploadFilePath,
+    } as FileInfo);
+    if (exists) {
+      const overwrite = await openConfirmAsync({
+        body: `The destination already have a folder named ${fileName}, Do you want to replace it?`,
+      });
+      if (!overwrite) {
+        return;
+      }
+    }
+    await client.uploadFile(
+      {
+        storage: selectedStorage,
+        bucket: selectedBucket,
+        path: uploadFilePath,
+        name: fileName,
+        type: FolderFileType,
+      } as FileInfo,
+      filePath,
+    );
+    //it has delay on google cloud after upload
+    setTimeout(async () => {
+      await reloadFiles();
+    }, 500);
+  }
+
+  async function handleUploadFile() {
+    const filePaths = await window.dialog.showOpenDialog("", ["openFile"]);
+    if (!filePaths) return;
+    const filePath = filePaths[0];
+    const fileName = getFileName(filePath);
     const uploadFilePath = prefix ? `${prefix}${fileName}` : fileName;
     const client = StorageClientFactory.createClient(selectedStorage);
     const exists = await client.hasObject({
@@ -223,9 +268,10 @@ export default function HomePage() {
         storage: selectedStorage,
         bucket: selectedBucket,
         path: uploadFilePath,
-        name: file.name,
+        name: fileName,
+        type: UnknownFileType,
       } as FileInfo,
-      file.path,
+      filePath,
     );
     //it has delay on google cloud after upload
     setTimeout(async () => {
@@ -329,6 +375,7 @@ export default function HomePage() {
           onRefresh={handleRefreshList}
           onRenameFile={handleRenameObject}
           onUploadFile={handleUploadFile}
+          onUploadFolder={handleUploadFolder}
           onDownloadFile={handleDownloadFile}
           onDownloadFolder={handleDownloadFolder}
         />

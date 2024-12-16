@@ -92,8 +92,8 @@ export class StorageClient<T extends StorageInfo> {
     return this.getFiles(bucket, parentPath, signal, progress, "");
   }
 
-  async uploadFile(file: FileInfo, localFilePath: string): Promise<Boolean> {
-    return await window.ipc.invoke("upload-file", file, localFilePath);
+  async uploadFile(file: FileInfo, localFilePath: string): Promise<void> {
+    await window.ipc.invoke("upload-file", file, localFilePath);
   }
 
   //folder operation

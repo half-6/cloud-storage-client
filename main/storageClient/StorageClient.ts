@@ -8,6 +8,7 @@ import {
 } from "#types";
 
 export abstract class StorageClient<T extends StorageInfo> {
+  static defaultDelimiter = "/";
   storage: T;
 
   constructor(storage: T) {

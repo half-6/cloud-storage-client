@@ -51,16 +51,14 @@ interface CustomGridToolbarProps extends GridToolbarProps {
   onRefresh: () => void;
   onNewFolder: () => void;
   onNewFile: () => void;
-  onUploadFile: (file: File) => Promise<void>;
+  onUploadFile: () => Promise<void>;
+  onUploadFolder: () => Promise<void>;
   fileList: FileInfo[];
 }
-//NonNullable<GridSlotsComponentsProps["toolbar"]>
 function CustomDataGridToolbar(props: CustomGridToolbarProps) {
   const [newMenuAnchorEl, setNewMenuAnchorEl] =
     React.useState<null | HTMLElement>(null);
-
   const openMenu = Boolean(newMenuAnchorEl);
-  const fileInputRef = useRef(null);
 
   const handleCloseMenu = () => {
     setNewMenuAnchorEl(null);
@@ -69,24 +67,16 @@ function CustomDataGridToolbar(props: CustomGridToolbarProps) {
     setNewMenuAnchorEl(event.currentTarget);
   };
   const handleNewFolder = () => {
+    handleCloseMenu();
     props.onNewFolder();
-    handleCloseMenu();
   };
-  const handleNewFile = () => {
-    props.onNewFile();
+  const handleUploadFile = async () => {
     handleCloseMenu();
+    await props.onUploadFile();
   };
-  const handleUploadFile = (event) => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-  const handleFileSelect = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) => {
-    const file = event.target.files[0];
-    props.onUploadFile(file);
+  const handleUploadFolder = async () => {
     handleCloseMenu();
+    await props.onUploadFolder();
   };
   return (
     <GridToolbarContainer
@@ -156,12 +146,12 @@ function CustomDataGridToolbar(props: CustomGridToolbarProps) {
             <UploadFileIcon />
           </ListItemIcon>
           <ListItemText>Upload File</ListItemText>
-          <input
-            type="file"
-            ref={fileInputRef}
-            hidden
-            onChange={handleFileSelect}
-          />
+        </MenuItem>
+        <MenuItem onClick={handleUploadFolder}>
+          <ListItemIcon>
+            <UploadFileIcon />
+          </ListItemIcon>
+          <ListItemText>Upload Folder</ListItemText>
         </MenuItem>
       </Menu>
     </GridToolbarContainer>
@@ -181,7 +171,8 @@ export interface FileBrowserProps {
   onRenameFile: (file: FileInfo, newFileName: string) => Promise<void>;
   onRefresh: () => void;
   onAbout: () => void;
-  onUploadFile: (file: File) => Promise<void>;
+  onUploadFile: () => Promise<void>;
+  onUploadFolder: () => Promise<void>;
   onDownloadFile: (file: FileInfo) => Promise<void>;
   onDownloadFolder: (file: FileInfo) => Promise<void>;
 }
@@ -388,6 +379,7 @@ export const FileBrowser = (props: FileBrowserProps) => {
             onRefresh: props.onRefresh,
             onNewFolder: handleNewFolder,
             onUploadFile: props.onUploadFile,
+            onUploadFolder: props.onUploadFolder,
             fileList: props.fileList,
           },
           loadingOverlay: {

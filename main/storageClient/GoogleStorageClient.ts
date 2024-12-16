@@ -68,9 +68,9 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
     let newKey = newPath;
     if (
       file.type.fileType === FileFormatType.Folder &&
-      !newPath.endsWith("/")
+      !newPath.endsWith(StorageClient.defaultDelimiter)
     ) {
-      newKey = newKey + "/";
+      newKey = newKey + StorageClient.defaultDelimiter;
     }
     if (file.type.fileType === FileFormatType.Folder) {
       const allFiles = await this.getFilesRecursively(file.bucket, file.path);
@@ -90,7 +90,7 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
           itemNewPath,
         );
       });
-      await promiseAllInBatches(jobs, 100);
+      await promiseAllInBatches(jobs, 10);
     } else {
       await this.copyObject(
         file.bucket.name,
