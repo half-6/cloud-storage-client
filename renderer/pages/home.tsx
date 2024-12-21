@@ -3,22 +3,21 @@ import { styled } from "@mui/material";
 import {
   getFileName,
   getNoneDuplicatedCloneFileName,
+  replaceFromEnd,
   useSWRAbort,
 } from "../lib";
-import { StorageClientFactory } from "#storageClient";
+import { StorageClient, StorageClientFactory } from "#storageClient";
 import {
   BucketInfo,
   FileFormatType,
   FileInfo,
   FolderFileType,
   JobInfo,
-  JobProgressInfo,
-  JobStatusInfo,
-  JobTypeInfo,
   StorageInfo,
   UnknownFileType,
 } from "#types";
 import {
+  ActionObject,
   BucketListDrawer,
   DrawerWidth,
   FileBrowser,
@@ -28,10 +27,9 @@ import {
   MenuInfo,
   TreeItemInfo,
 } from "../components";
-import { useAlertStore, useJobStore, useSystemStore } from "../store";
+import { useAlertStore, useSystemStore } from "../store";
 import useSWR from "swr";
 import { useSnackbar } from "notistack";
-import { v4 } from "uuid";
 
 const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
   open?: boolean;
@@ -68,7 +66,7 @@ export default function HomePage() {
   const [selectedFile, setSelectedFile] = useState<FileInfo>();
 
   const { enqueueSnackbar } = useSnackbar();
-  const { openConfirmAsync } = useAlertStore();
+  const { openConfirmAsync, openAlertAsync } = useAlertStore();
 
   const [loadedFileNumber, setLoadedFileNumber] = useState(0);
   const [showFileDetail, setShowFileDetail] = useState<boolean>(false);
@@ -91,7 +89,9 @@ export default function HomePage() {
     isLoading: fileDetailLoading,
     error: fileDetailError,
   } = useSWR(
-    selectedFile?.path && selectedFile.type != FolderFileType && showFileDetail
+    selectedFile?.path &&
+      selectedFile.type.fileType !== FileFormatType.Folder &&
+      showFileDetail
       ? [selectedFile?.path, showFileDetail.toString()]
       : null,
     async (params) => {
@@ -106,7 +106,7 @@ export default function HomePage() {
     error: downloadFileError,
   } = useSWR(
     selectedFile?.path &&
-      selectedFile.type != FolderFileType &&
+      selectedFile.type.fileType !== FileFormatType.Folder &&
       showFileDetail &&
       isDownloadFile
       ? [
@@ -178,11 +178,14 @@ export default function HomePage() {
 
   async function handleCloneObject(file: FileInfo) {
     const newFileName = getNoneDuplicatedCloneFileName(fileList, file.name);
-    const newFile = await StorageClientFactory.createClient(
-      selectedStorage,
-    ).cloneObject(file, prefix ? `${prefix}${newFileName}` : newFileName);
+    const newFilePath = replaceFromEnd(file.path, file.name, newFileName);
+    await StorageClientFactory.createClient(selectedStorage).copy(file, {
+      ...file,
+      name: newFileName,
+      path: newFilePath,
+    });
     await reloadFiles();
-    enqueueSnackbar(`Clone ${newFile.path} success`, {
+    enqueueSnackbar(`Clone ${newFilePath} success`, {
       variant: "success",
     });
   }
@@ -195,14 +198,29 @@ export default function HomePage() {
   }
 
   async function handleRenameObject(file, newFileName) {
-    await StorageClientFactory.createClient(selectedStorage).renameObject(
-      file,
-      newFileName,
-    );
+    const newFilePath = replaceFromEnd(file.path, file.name, newFileName);
+    await StorageClientFactory.createClient(selectedStorage).move(file, {
+      ...file,
+      name: newFileName,
+      path: newFilePath,
+    } as FileInfo);
     await reloadFiles();
     enqueueSnackbar(`Rename ${newFileName} success`, {
       variant: "success",
     });
+  }
+
+  async function handlePasteObject(action: ActionObject) {
+    if (action.file.storage.id !== selectedStorage.id) {
+      await openAlertAsync({
+        body: "we can paste file/folder in same cloud storage",
+      });
+      return;
+    }
+    // if (action.file.type.fileType === FileFormatType.Folder) {
+    // } else {
+    //   //await StorageClientFactory.createClient(selectedStorage).hasObject()
+    // }
   }
 
   async function handleUploadFolder() {
@@ -301,7 +319,7 @@ export default function HomePage() {
   }
 
   async function handleDeleteObject(file: FileInfo) {
-    await StorageClientFactory.createClient(selectedStorage).deleteObject(file);
+    await StorageClientFactory.createClient(selectedStorage).delete(file);
     await reloadFiles();
     enqueueSnackbar(`Delete ${file.name} success`, {
       variant: "success",
@@ -376,6 +394,7 @@ export default function HomePage() {
           onRenameFile={handleRenameObject}
           onUploadFile={handleUploadFile}
           onUploadFolder={handleUploadFolder}
+          onPasteObject={handlePasteObject}
           onDownloadFile={handleDownloadFile}
           onDownloadFolder={handleDownloadFolder}
         />

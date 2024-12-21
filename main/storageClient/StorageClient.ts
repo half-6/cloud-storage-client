@@ -1,11 +1,13 @@
 import {
   BucketInfo,
   FileDetailInfo,
+  FileFormatType,
   FileInfo,
   JobDownloadInfo,
   JobProgressInfo,
   StorageInfo,
 } from "#types";
+import { promiseAllInBatches } from "#utility";
 
 export abstract class StorageClient<T extends StorageInfo> {
   static defaultDelimiter = "/";
@@ -26,14 +28,6 @@ export abstract class StorageClient<T extends StorageInfo> {
   abstract deleteBucket(bucket: BucketInfo): Promise<void>;
 
   //file Operation
-  abstract getFiles(
-    bucket: BucketInfo,
-    parentPath: string,
-    signal?: AbortSignal,
-    progress?: (progress: number) => void,
-    delimiter?: string,
-  ): Promise<FileInfo[]>;
-
   abstract getTop1000Files(
     bucket: BucketInfo,
     parentPath: string,
@@ -60,7 +54,83 @@ export abstract class StorageClient<T extends StorageInfo> {
   //folder operation
   abstract createFolder(file: FileInfo): Promise<FileInfo>;
 
+  /**
+   * Delete files/folders recursively
+   * @param file
+   */
+  async delete(file: FileInfo) {
+    if (file.type.fileType === FileFormatType.Folder) {
+      const allFiles = await this.getFilesRecursively(file.bucket, file.path);
+      const jobs = allFiles.map((item) => {
+        return this.deleteObject(item);
+      });
+      jobs.unshift(this.deleteObject(file));
+      await promiseAllInBatches(jobs, 100);
+    } else {
+      await this.deleteObject(file);
+    }
+  }
+
   abstract deleteObject(file: FileInfo): Promise<void>;
+
+  /**
+   * Move files/folder recursively
+   * @param file
+   * @param destinationFile
+   */
+  async move(file: FileInfo, destinationFile: FileInfo) {
+    if (file.type.fileType === FileFormatType.Folder) {
+      const allFiles = await this.getFilesRecursively(file.bucket, file.path);
+      const jobs = allFiles.map((item) => {
+        const itemNewPath = item.path.replace(file.path, destinationFile.path);
+        return this.moveObject(item, {
+          ...item,
+          path: itemNewPath,
+          bucket: destinationFile.bucket,
+          storage: destinationFile.storage,
+        } as FileInfo);
+      });
+      // include folder
+      jobs.unshift(this.moveObject(file, destinationFile));
+      await promiseAllInBatches(jobs, 100);
+    } else {
+      await this.moveObject(file, destinationFile);
+    }
+  }
+
+  abstract moveObject(file: FileInfo, destinationFile: FileInfo): Promise<void>;
+
+  /**
+   * Copy files/folders recursively
+   * @param file
+   * @param destinationFile
+   */
+  async copy(file: FileInfo, destinationFile: FileInfo): Promise<void> {
+    if (file.type.fileType === FileFormatType.Folder) {
+      const allFiles = await this.getFilesRecursively(file.bucket, file.path);
+      const jobs = allFiles.map((item) => {
+        const itemNewPath = item.path.replace(file.path, destinationFile.path);
+        return this.copyObject(item, {
+          ...item,
+          path: itemNewPath,
+          bucket: destinationFile.bucket,
+          storage: destinationFile.storage,
+        } as FileInfo);
+      });
+      if (allFiles.length === 0) {
+        // include folder
+        jobs.unshift(this.copyObject(file, destinationFile));
+      }
+      await promiseAllInBatches(jobs, 100);
+    } else {
+      await this.copyObject(file, destinationFile);
+    }
+  }
+
+  abstract async copyObject(
+    file: FileInfo,
+    destinationFile: FileInfo,
+  ): Promise<void>;
 
   abstract getFile(file: FileInfo): Promise<FileDetailInfo>;
 
@@ -72,9 +142,36 @@ export abstract class StorageClient<T extends StorageInfo> {
     end: number,
   ): Promise<JobDownloadInfo>;
 
-  abstract renameObject(file: FileInfo, newFileName: string): Promise<FileInfo>;
-
-  abstract cloneObject(file: FileInfo, newPath: string): Promise<FileInfo>;
+  async getFiles(
+    bucket: BucketInfo,
+    parentPath: string,
+    signal?: AbortSignal | undefined,
+    progress?: ((progress: number) => void) | undefined,
+    delimiter?: string,
+  ): Promise<FileInfo[]> {
+    let output: FileInfo[] = [];
+    let nextContinuationToken: string | undefined = undefined;
+    let index = 0;
+    progress && progress(index);
+    do {
+      const res = await this.getTop1000Files(
+        bucket,
+        parentPath,
+        nextContinuationToken,
+        delimiter,
+      );
+      nextContinuationToken = res.nextToken;
+      const currentRes = res.list.map((r, i) => {
+        return {
+          ...r,
+          id: ++index,
+        } as FileInfo;
+      });
+      output.push(...currentRes);
+      progress && progress(output.length);
+    } while (nextContinuationToken && (!signal || !signal.aborted));
+    return output;
+  }
 
   abstract headObject(file: FileInfo): Promise<FileDetailInfo>;
 

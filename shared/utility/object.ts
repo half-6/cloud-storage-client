@@ -42,7 +42,7 @@ export async function promiseAllInBatches(promises: any[], batchSize: number) {
   const res = [];
   for (let i = 0; i < promises.length; i += batchSize) {
     const batch = promises.slice(i, i + batchSize);
-    const results = await Promise.all(batch);
+    const results = await Promise.allSettled(batch);
     // Process the results of this batch
     res.push(...results);
   }

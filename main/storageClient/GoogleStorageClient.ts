@@ -64,46 +64,6 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
 
   //endregion
 
-  async cloneObject(file: FileInfo, newPath: string): Promise<FileInfo> {
-    let newKey = newPath;
-    if (
-      file.type.fileType === FileFormatType.Folder &&
-      !newPath.endsWith(StorageClient.defaultDelimiter)
-    ) {
-      newKey = newKey + StorageClient.defaultDelimiter;
-    }
-    if (file.type.fileType === FileFormatType.Folder) {
-      const allFiles = await this.getFilesRecursively(file.bucket, file.path);
-      // clone folder first for empty folder case
-      await this.copyObject(
-        file.bucket.name,
-        file.path,
-        file.bucket.name,
-        newKey,
-      );
-      const jobs = allFiles.map((item) => {
-        const itemNewPath = item.path.replace(file.path, newKey);
-        return this.copyObject(
-          file.bucket.name,
-          item.path,
-          file.bucket.name,
-          itemNewPath,
-        );
-      });
-      await promiseAllInBatches(jobs, 10);
-    } else {
-      await this.copyObject(
-        file.bucket.name,
-        file.path,
-        file.bucket.name,
-        newKey,
-      );
-    }
-    const newFile: FileInfo = deepClone(file);
-    newFile.path = newKey;
-    return newFile;
-  }
-
   async createFolder(file: FileInfo): Promise<FileInfo> {
     if (!file.path.endsWith("/")) {
       file.path = file.path + "/";
@@ -113,38 +73,118 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
     return file;
   }
 
-  async deleteObject(file: FileInfo): Promise<void> {
-    await this.client.bucket(file.bucket.name).file(file.path).delete();
+  async getFile(file: FileInfo): Promise<FileDetailInfo> {
+    return await this.headObject(file);
+  }
+
+  async getTop1000Files(
+    bucket: BucketInfo,
+    parentPath: string,
+    continuationToken?: string,
+    delimiter?: string | undefined,
+  ): Promise<{ list: FileInfo[]; nextToken: string }> {
+    if (delimiter === undefined) {
+      delimiter = "/";
+    }
+    // @google-cloud/storage library will not return folder if that folder is not object
+    let [files, res, apiResponse] = await this.client
+      .bucket(bucket.name)
+      .getFiles({
+        delimiter,
+        prefix: parentPath,
+        // autoPaginate:false,
+        // includeFoldersAsPrefixes: true,
+        // //maxResults: 1000,
+        includeTrailingDelimiter: true,
+        //versions: true,
+      });
+    if (parentPath) {
+      files = files.filter((f) => f.name !== parentPath);
+    }
+
+    const list = files.map((file) => {
+      if (file.name.endsWith("/")) {
+        return {
+          name: getFileName(file.name),
+          storage: this.storage,
+          bucket: bucket,
+          path: file.name,
+          type: FolderFileType,
+          lastModify: new Date(file.metadata.updated),
+        } as FileInfo;
+      }
+      return {
+        name: getFileName(file.name),
+        storage: this.storage,
+        bucket: bucket,
+        path: file.name,
+        type: getFileTypeByFileName(file.name), // file.metadata.contentType
+        size: Number(file.metadata.size),
+        lastModify: new Date(file.metadata.updated),
+      } as FileInfo;
+    });
+    apiResponse.prefixes?.forEach((folder) => {
+      if (!list.some((file) => file.path === folder)) {
+        list.push({
+          name: getFileName(folder),
+          storage: this.storage,
+          bucket: bucket,
+          path: folder,
+          type: FolderFileType,
+        } as FileInfo);
+      }
+    });
+    return {
+      list,
+      nextToken: res?.pageToken,
+    };
+  }
+
+  async getFilesRecursively(
+    bucket: BucketInfo,
+    parentPath: string,
+    signal?: AbortSignal | undefined,
+    progress?: ((progress: number) => void) | undefined,
+  ): Promise<FileInfo[]> {
+    return this.getFiles(bucket, parentPath, signal, progress, "");
   }
 
   /**
-   * download file for preview, better less than 100M
+   * Move a object
    * @param file
+   * @param destinationFile
    */
-  async downloadFile(file: FileInfo): Promise<FileDetailInfo> {
-    const [byteArray] = await this.client
+  async moveObject(file: FileInfo, destinationFile: FileInfo) {
+    const moveDestination = this.client
+      .bucket(destinationFile.bucket.name)
+      .file(destinationFile.path);
+    await this.client
       .bucket(file.bucket.name)
       .file(file.path)
-      .download();
-    const fileType = await getFileMime(byteArray);
-    const fileDetail = { ...file } as FileDetailInfo;
-    fileDetail.isReadableContent = fileType.mime.includes("text");
-    fileDetail.isImageContent = fileType.mime.includes("image");
-    if (fileDetail.isReadableContent) {
-      fileDetail.body = fileType.body;
-    }
-    if (fileDetail.isImageContent) {
-      fileDetail.body =
-        "data:" +
-        fileType.mime +
-        ";base64," +
-        Buffer.from(byteArray).toString("base64");
-    }
-    return fileDetail;
+      .move(moveDestination);
   }
 
-  async getFile(file: FileInfo): Promise<FileDetailInfo> {
-    return await this.headObject(file);
+  /**
+   * Copy a object
+   * @param file
+   * @param destinationFile
+   */
+  async copyObject(file: FileInfo, destinationFile: FileInfo) {
+    const copyDestination = this.client
+      .bucket(destinationFile.bucket.name)
+      .file(destinationFile.path);
+    await this.client
+      .bucket(file.bucket.name)
+      .file(file.path)
+      .copy(copyDestination);
+  }
+
+  /**
+   * Delete a object
+   * @param file
+   */
+  async deleteObject(file: FileInfo) {
+    await this.client.bucket(file.bucket.name).file(file.path).delete();
   }
 
   async headObject(file: FileInfo): Promise<FileDetailInfo> {
@@ -170,115 +210,6 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
       .file(file.path)
       .exists();
     return res;
-  }
-
-  async copyObject(
-    sourceBucket: string,
-    sourcePath: string,
-    newBucket: string,
-    newPath: string,
-  ) {
-    const copyDestination = this.client.bucket(newBucket).file(newPath);
-    return await this.client
-      .bucket(sourceBucket)
-      .file(sourcePath)
-      .copy(copyDestination);
-  }
-
-  async getFiles(
-    bucket: BucketInfo,
-    parentPath: string,
-    signal?: AbortSignal | undefined,
-    progress?: ((progress: number) => void) | undefined,
-    delimiter?: string | undefined,
-  ): Promise<FileInfo[]> {
-    let output: FileInfo[] = [];
-    let nextContinuationToken: string | undefined = undefined;
-    let index = 0;
-    progress && progress(index);
-    do {
-      const res = await this.getTop1000Files(
-        bucket,
-        parentPath,
-        nextContinuationToken,
-        delimiter,
-      );
-      nextContinuationToken = res.nextToken;
-      const currentRes = res.list.map((r, i) => {
-        return {
-          ...r,
-          id: ++index,
-        } as FileInfo;
-      });
-      output.push(...currentRes);
-      progress && progress(output.length);
-    } while (nextContinuationToken && (!signal || !signal.aborted));
-    return output;
-  }
-
-  async getTop1000Files(
-    bucket: BucketInfo,
-    parentPath: string,
-    continuationToken?: string,
-    delimiter?: string | undefined,
-  ): Promise<{ list: FileInfo[]; nextToken: string }> {
-    if (delimiter === undefined) {
-      delimiter = "/";
-    }
-    let [files, res] = await this.client.bucket(bucket.name).getFiles({
-      delimiter,
-      prefix: parentPath,
-      //includeFoldersAsPrefixes: true,
-      //maxResults: 1000,
-      includeTrailingDelimiter: true,
-    });
-    if (parentPath) {
-      files = files.filter((f) => f.name !== parentPath);
-    }
-    const list = files.map((file) => {
-      if (file.name.endsWith("/")) {
-        return {
-          name: getFileName(file.name),
-          storage: this.storage,
-          bucket: bucket,
-          path: file.name,
-          type: FolderFileType,
-          lastModify: new Date(file.metadata.updated),
-        } as FileInfo;
-      }
-      return {
-        name: getFileName(file.name),
-        storage: this.storage,
-        bucket: bucket,
-        path: file.name,
-        type: getFileTypeByFileName(file.name), // file.metadata.contentType
-        size: Number(file.metadata.size),
-        lastModify: new Date(file.metadata.updated),
-      } as FileInfo;
-    });
-    return {
-      list,
-      nextToken: res.pageToken,
-    };
-  }
-
-  async getFilesRecursively(
-    bucket: BucketInfo,
-    parentPath: string,
-    signal?: AbortSignal | undefined,
-    progress?: ((progress: number) => void) | undefined,
-  ): Promise<FileInfo[]> {
-    return this.getFiles(bucket, parentPath, signal, progress, "");
-  }
-
-  async renameObject(file: FileInfo, newFileName: string): Promise<FileInfo> {
-    const newFilePath = replaceFromEnd(file.path, file.name, newFileName);
-    await this.cloneObject(file, newFilePath);
-    await this.deleteObject(file);
-    const newFile: FileInfo = deepClone(file);
-    newFile.path = newFilePath;
-    newFile.name = newFileName;
-    return newFile;
   }
 
   uploadFile(
@@ -334,5 +265,31 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
         total: file.size,
       },
     } as JobDownloadInfo;
+  }
+
+  /**
+   * download file for preview, better less than 100M
+   * @param file
+   */
+  async downloadFile(file: FileInfo): Promise<FileDetailInfo> {
+    const [byteArray] = await this.client
+      .bucket(file.bucket.name)
+      .file(file.path)
+      .download();
+    const fileType = await getFileMime(byteArray);
+    const fileDetail = { ...file } as FileDetailInfo;
+    fileDetail.isReadableContent = fileType.mime.includes("text");
+    fileDetail.isImageContent = fileType.mime.includes("image");
+    if (fileDetail.isReadableContent) {
+      fileDetail.body = fileType.body;
+    }
+    if (fileDetail.isImageContent) {
+      fileDetail.body =
+        "data:" +
+        fileType.mime +
+        ";base64," +
+        Buffer.from(byteArray).toString("base64");
+    }
+    return fileDetail;
   }
 }

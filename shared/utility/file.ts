@@ -1,11 +1,14 @@
 import { FileInfo } from "#types";
 
 export function getFileName(path: string) {
-  const list =
-    path.indexOf("/") >= 0 ? path.trim().split("/") : path.trim().split("\\");
+  path = path.trim().replaceAll("\\", "/");
+  if (path.endsWith("/")) {
+    path = path.slice(0, -1);
+  }
+  const list = path.trim().split("/");
   let fileName = list.pop();
-  while (fileName.trim() === "" && list.length > 0) {
-    fileName = list.pop();
+  if (fileName.trim() === "") {
+    fileName = "/";
   }
   return fileName;
 }

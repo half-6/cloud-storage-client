@@ -44,16 +44,26 @@ import { FileRename } from "./FileRename";
 import FolderOutlinedIcon from "@mui/icons-material/FolderOutlined";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
+import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
+import ContentPasteOutlinedIcon from "@mui/icons-material/ContentPasteOutlined";
+import ContentCutOutlinedIcon from "@mui/icons-material/ContentCutOutlined";
 import { NewFolderDialog } from "./NewFolderDialog";
+
+export interface ActionObject {
+  action: "cut" | "copy";
+  file: FileInfo;
+}
 
 interface CustomGridToolbarProps extends GridToolbarProps {
   onAbout: () => void;
   onRefresh: () => void;
   onNewFolder: () => void;
   onNewFile: () => void;
+  onPasteObject: () => void;
   onUploadFile: () => Promise<void>;
   onUploadFolder: () => Promise<void>;
   fileList: FileInfo[];
+  actionObject: ActionObject;
 }
 function CustomDataGridToolbar(props: CustomGridToolbarProps) {
   const [newMenuAnchorEl, setNewMenuAnchorEl] =
@@ -63,7 +73,7 @@ function CustomDataGridToolbar(props: CustomGridToolbarProps) {
   const handleCloseMenu = () => {
     setNewMenuAnchorEl(null);
   };
-  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+  const handleNewClick = (event: React.MouseEvent<HTMLElement>) => {
     setNewMenuAnchorEl(event.currentTarget);
   };
   const handleNewFolder = () => {
@@ -90,7 +100,7 @@ function CustomDataGridToolbar(props: CustomGridToolbarProps) {
       <Box sx={{ display: "flex", gap: "10px" }}>
         <Button
           size="small"
-          onClick={handleClick}
+          onClick={handleNewClick}
           startIcon={<AddIcon />}
           // endIcon={<KeyboardArrowDownIcon />}
           disabled={!props.fileList}
@@ -105,6 +115,16 @@ function CustomDataGridToolbar(props: CustomGridToolbarProps) {
             disabled={!props.fileList}
           >
             Refresh
+          </Button>
+        </Tooltip>
+        <Tooltip title="Paste">
+          <Button
+            size="small"
+            onClick={props.onPasteObject}
+            startIcon={<ContentPasteOutlinedIcon />}
+            disabled={!props.actionObject}
+          >
+            Paste
           </Button>
         </Tooltip>
         <Tooltip title="Cancel requests">
@@ -175,6 +195,7 @@ export interface FileBrowserProps {
   onUploadFolder: () => Promise<void>;
   onDownloadFile: (file: FileInfo) => Promise<void>;
   onDownloadFolder: (file: FileInfo) => Promise<void>;
+  onPasteObject: (actionFile: ActionObject) => Promise<void>;
 }
 
 declare module "@mui/x-data-grid" {
@@ -218,6 +239,7 @@ const StyledGridOverlay = styled("div")(({ theme }) => ({
 
 export const FileBrowser = (props: FileBrowserProps) => {
   const [selectedFile, setSelectedFile] = useState<FileInfo>(null);
+  const [actionObject, setActionObject] = useState<ActionObject>();
   const { openConfirmAsync, openAlertAsync } = useAlertStore();
   const [openRenameDialog, setOpenRenameDialog] = useState<boolean>(false);
   const [openNewFolderDialog, setOpenNewFolderDialog] =
@@ -246,9 +268,7 @@ export const FileBrowser = (props: FileBrowserProps) => {
       field: "type",
       headerName: "Type",
       width: 120,
-      renderCell: (params) => {
-        return <>{params.value.name}</>;
-      },
+      valueGetter: (params: FileInfo) => params.name,
     },
     {
       field: "size",
@@ -292,36 +312,42 @@ export const FileBrowser = (props: FileBrowserProps) => {
             onClick={() => handleCloneFile(file)}
             showInMenu
           />,
+          <GridActionsCellItem
+            label="Cut"
+            key={3}
+            icon={<ContentCutOutlinedIcon fontSize="small" />}
+            onClick={() => handleCutObject(file)}
+            showInMenu
+          />,
+          <GridActionsCellItem
+            label="Copy"
+            key={4}
+            icon={<ContentCopyOutlinedIcon fontSize="small" />}
+            onClick={() => handleCopyObject(file)}
+            showInMenu
+          />,
+          <GridActionsCellItem
+            label="Download"
+            key={5}
+            icon={<DownloadIcon fontSize="small" />}
+            onClick={() =>
+              file.type.fileType === FileFormatType.Folder
+                ? handleDownloadFolder(file)
+                : handleDownloadFile(file)
+            }
+            showInMenu
+          />,
         ];
         if (file.type.fileType !== FileFormatType.Folder) {
           menu = [
             <GridActionsCellItem
               label="Preview"
-              key={3}
+              key={6}
               icon={<OpenIcon fontSize="small" />}
               onClick={() => handleEditFile(file)}
               showInMenu
             />,
             ...menu,
-            <GridActionsCellItem
-              label="Download"
-              key={3}
-              icon={<DownloadIcon fontSize="small" />}
-              onClick={() => handleDownloadFile(file)}
-              showInMenu
-            />,
-          ];
-        }
-        if (file.type.fileType === FileFormatType.Folder) {
-          menu = [
-            ...menu,
-            <GridActionsCellItem
-              label="Download"
-              key={3}
-              icon={<DownloadIcon fontSize="small" />}
-              onClick={() => handleDownloadFolder(file)}
-              showInMenu
-            />,
           ];
         }
         return menu;
@@ -330,6 +356,9 @@ export const FileBrowser = (props: FileBrowserProps) => {
   ];
   const handleNewFolder = async () => {
     setOpenNewFolderDialog(true);
+  };
+  const handlePasteObject = async () => {
+    await props.onPasteObject(actionObject);
   };
   const handleEditFile = async (file: FileInfo) => {
     await props.onEditFile(file);
@@ -350,6 +379,12 @@ export const FileBrowser = (props: FileBrowserProps) => {
   };
   const handleDownloadFolder = async (file: FileInfo) => {
     await props.onDownloadFolder(file);
+  };
+  const handleCopyObject = async (file: FileInfo) => {
+    setActionObject({ action: "copy", file });
+  };
+  const handleCutObject = async (file: FileInfo) => {
+    setActionObject({ action: "cut", file });
   };
   const handleRefresh = async () => {
     await props.onRefresh();
@@ -380,6 +415,8 @@ export const FileBrowser = (props: FileBrowserProps) => {
             onNewFolder: handleNewFolder,
             onUploadFile: props.onUploadFile,
             onUploadFolder: props.onUploadFolder,
+            onPasteObject: handlePasteObject,
+            actionObject: actionObject,
             fileList: props.fileList,
           },
           loadingOverlay: {

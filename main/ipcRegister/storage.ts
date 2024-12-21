@@ -55,32 +55,30 @@ ipcMain.handle("create-folder", async (event, file: FileInfo) => {
   );
 });
 
-ipcMain.handle("delete-object", async (event, file: FileInfo) => {
-  return await StorageClientFactory.createClient(file.storage).deleteObject(
-    file,
-  );
+ipcMain.handle("delete-file", async (event, file: FileInfo) => {
+  await StorageClientFactory.createClient(file.storage).delete(file);
 });
 
 ipcMain.handle(
-  "rename-object",
-  async (event, file: FileInfo, newFileName: string) => {
-    return await StorageClientFactory.createClient(file.storage).renameObject(
+  "move-file",
+  async (event, file: FileInfo, destinationFile: FileInfo) => {
+    await StorageClientFactory.createClient(file.storage).move(
       file,
-      newFileName,
+      destinationFile,
     );
   },
 );
 
-ipcMain.handle("has-object", async (event, file: FileInfo) => {
+ipcMain.handle("has-file", async (event, file: FileInfo) => {
   return await StorageClientFactory.createClient(file.storage).hasObject(file);
 });
 
 ipcMain.handle(
-  "clone-object",
-  async (event, file: FileInfo, newFileName: string) => {
-    return await StorageClientFactory.createClient(file.storage).cloneObject(
+  "copy-file",
+  async (event, file: FileInfo, destinationFile: FileInfo) => {
+    await StorageClientFactory.createClient(file.storage).copy(
       file,
-      newFileName,
+      destinationFile,
     );
   },
 );

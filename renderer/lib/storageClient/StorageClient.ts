@@ -8,6 +8,7 @@ import {
 } from "#types";
 
 export class StorageClient<T extends StorageInfo> {
+  static defaultDelimiter = "/";
   storage: T;
 
   constructor(storage: T) {
@@ -101,8 +102,8 @@ export class StorageClient<T extends StorageInfo> {
     return await window.ipc.invoke("create-folder", file);
   }
 
-  async deleteObject(file: FileInfo): Promise<void> {
-    await window.ipc.invoke("delete-object", file);
+  async delete(file: FileInfo): Promise<void> {
+    await window.ipc.invoke("delete-file", file);
   }
 
   async getFile(file: FileInfo): Promise<FileDetailInfo> {
@@ -124,19 +125,15 @@ export class StorageClient<T extends StorageInfo> {
     );
   }
 
-  async renameObject(file: FileInfo, newFileName: string): Promise<FileInfo> {
-    return await window.ipc.invoke("rename-object", file, newFileName);
+  async move(file: FileInfo, destinationFile: FileInfo): Promise<void> {
+    await window.ipc.invoke("move-file", file, destinationFile);
   }
 
-  async cloneObject(file: FileInfo, newPath: string): Promise<FileInfo> {
-    return await window.ipc.invoke("clone-object", file, newPath);
-  }
-
-  async headObject(file: FileInfo): Promise<FileDetailInfo> {
-    return Promise.resolve(undefined);
+  async copy(file: FileInfo, destinationFile: FileInfo): Promise<void> {
+    await window.ipc.invoke("copy-file", file, destinationFile);
   }
 
   async hasObject(file: FileInfo): Promise<boolean> {
-    return await window.ipc.invoke("has-object", file);
+    return await window.ipc.invoke("has-file", file);
   }
 }

@@ -163,37 +163,6 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   //endregion
 
   //region File list operation
-  async getFiles(
-    bucket: BucketInfo,
-    parentPath: string,
-    signal?: AbortSignal | undefined,
-    progress?: ((progress: number) => void) | undefined,
-    delimiter?: string,
-  ): Promise<FileInfo[]> {
-    let output: FileInfo[] = [];
-    let nextContinuationToken: string | undefined = undefined;
-    let index = 0;
-    progress && progress(index);
-    do {
-      const res = await this.getTop1000Files(
-        bucket,
-        parentPath,
-        nextContinuationToken,
-        delimiter,
-      );
-      nextContinuationToken = res.nextToken;
-      const currentRes = res.list.map((r, i) => {
-        return {
-          ...r,
-          id: ++index,
-        } as FileInfo;
-      });
-      output.push(...currentRes);
-      progress && progress(output.length);
-    } while (nextContinuationToken && (!signal || !signal.aborted));
-    return output;
-  }
-
   async getTop1000Files(
     bucket: BucketInfo,
     parentPath: string,
@@ -316,95 +285,28 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   }
 
   async deleteObject(file: FileInfo): Promise<void> {
-    if (file.type.fileType === FileFormatType.Folder) {
-      const allFiles = await this.getFilesRecursively(file.bucket, file.path);
-      const keys = allFiles.map((item) => {
-        return { Key: item.path };
-      });
-      keys.push({ Key: file.path });
-      //The request can contain a list of up to 1000 keys that you want to delete
-      const chunkedKeysList = chunkArray(keys, 1000);
-      for (let chunkedKeys of chunkedKeysList) {
-        const batchCommand = {
-          Bucket: file.bucket.name,
-          Delete: {
-            Objects: chunkedKeys,
-            Quiet: false,
-          },
-        };
-        const command = new DeleteObjectsCommand(batchCommand);
-        await this.client.send(command);
-      }
-      return;
-    } else {
-      const command = new DeleteObjectCommand({
-        Bucket: file.bucket.name,
-        Key: file.path,
-      });
-      await this.client.send(command);
-    }
+    const command = new DeleteObjectCommand({
+      Bucket: file.bucket.name,
+      Key: file.path,
+    });
+    await this.client.send(command);
   }
 
-  async renameObject(file: FileInfo, newFileName: string) {
-    const newFilePath = replaceFromEnd(file.path, file.name, newFileName);
-    await this.cloneObject(file, newFilePath);
+  async moveObject(file: FileInfo, destinationFile: FileInfo) {
+    await this.copyObject(file, destinationFile);
     await this.deleteObject(file);
-    const newFile: FileInfo = deepClone(file);
-    newFile.path = newFilePath;
-    newFile.name = newFileName;
-    return newFile;
   }
 
-  async cloneObject(file: FileInfo, newPath: string) {
-    let newKey = newPath;
-    if (
-      file.type.fileType === FileFormatType.Folder &&
-      !newPath.endsWith(StorageClient.defaultDelimiter)
-    ) {
-      newKey = newKey + StorageClient.defaultDelimiter;
-    }
-    if (file.type.fileType === FileFormatType.Folder) {
-      const allFiles = await this.getFilesRecursively(file.bucket, file.path);
-      // clone folder first for empty folder case
-      await this.copyObject(
-        file.bucket.name,
-        file.path,
-        file.bucket.name,
-        newKey,
-      );
-      const jobs = allFiles.map((item) => {
-        const itemNewPath = item.path.replace(file.path, newKey);
-        return this.copyObject(
-          file.bucket.name,
-          item.path,
-          file.bucket.name,
-          itemNewPath,
-        );
-      });
-      await promiseAllInBatches(jobs, 100);
-    } else {
-      await this.copyObject(
-        file.bucket.name,
-        file.path,
-        file.bucket.name,
-        newKey,
-      );
-    }
-    const newFile: FileInfo = deepClone(file);
-    newFile.path = newKey;
-    return newFile;
-  }
-
-  async copyObject(
-    sourceBucket: string,
-    sourcePath: string,
-    newBucket: string,
-    newPath: string,
-  ) {
+  /**
+   * Copy a object
+   * @param file
+   * @param destinationFile
+   */
+  async copyObject(file: FileInfo, destinationFile: FileInfo) {
     const command = new CopyObjectCommand({
-      Bucket: newBucket,
-      CopySource: buildCloudPath(sourceBucket, sourcePath),
-      Key: newPath,
+      Bucket: destinationFile.bucket.name,
+      CopySource: buildCloudPath(file.bucket.name, file.path),
+      Key: destinationFile.path,
     });
     return await this.client.send(command);
   }
