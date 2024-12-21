@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { styled } from "@mui/material";
 import {
+  getFileFullPath,
   getFileName,
   getNoneDuplicatedCloneFileName,
   replaceFromEnd,
@@ -30,6 +31,7 @@ import {
 import { useAlertStore, useSystemStore } from "../store";
 import useSWR from "swr";
 import { useSnackbar } from "notistack";
+import Logger from "electron-log/renderer";
 
 const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
   open?: boolean;
@@ -210,17 +212,65 @@ export default function HomePage() {
     });
   }
 
-  async function handlePasteObject(action: ActionObject) {
-    if (action.file.storage.id !== selectedStorage.id) {
-      await openAlertAsync({
-        body: "we can paste file/folder in same cloud storage",
+  async function handlePasteObject(actionObject: ActionObject) {
+    const delimiter =
+      actionObject.file.type.fileType === FileFormatType.Folder ? "/" : "";
+    const newFilePath = prefix
+      ? `${prefix}${actionObject.file.name}${delimiter}`
+      : `${actionObject.file.name}${delimiter}`;
+    const destinationFile = {
+      ...actionObject.file,
+      path: newFilePath,
+      bucket: selectedBucket,
+    };
+
+    const type =
+      actionObject.file.type.fileType === FileFormatType.Folder
+        ? "file"
+        : "folder";
+    const title = `${actionObject.action === "cut" ? "Move" : "Copy"} ${type}`;
+    const action = `${actionObject.action === "cut" ? "move" : "Copy"}`;
+    const exists =
+      await StorageClientFactory.createClient(selectedStorage).hasObject(
+        destinationFile,
+      );
+    if (exists) {
+      const message =
+        actionObject.file.type.fileType === FileFormatType.Folder
+          ? `The destination already has a folder named "${actionObject.file.name}", do you want to replace all files in the destination from ${getFileFullPath(actionObject.file)}??`
+          : `The destination already has a file named "${actionObject.file.name}", do you want to replace it in the destination from ${getFileFullPath(actionObject.file)}?`;
+      const overwrite = await openConfirmAsync({
+        body: message,
+        title: title,
       });
-      return;
+      if (!overwrite) {
+        return false;
+      }
+    } else {
+      const overwrite = await openConfirmAsync({
+        body: `Do you want to ${action} ${type} from ${getFileFullPath(actionObject.file)} in the destination?`,
+        title: title,
+      });
+      if (!overwrite) {
+        return false;
+      }
     }
-    // if (action.file.type.fileType === FileFormatType.Folder) {
-    // } else {
-    //   //await StorageClientFactory.createClient(selectedStorage).hasObject()
-    // }
+    if (actionObject.action === "cut") {
+      await StorageClientFactory.createClient(selectedStorage).move(
+        actionObject.file,
+        destinationFile,
+      );
+    } else {
+      await StorageClientFactory.createClient(selectedStorage).copy(
+        actionObject.file,
+        destinationFile,
+      );
+    }
+    await reloadFiles();
+    enqueueSnackbar(`${action} ${destinationFile.name} success`, {
+      variant: "success",
+    });
+    return true;
   }
 
   async function handleUploadFolder() {

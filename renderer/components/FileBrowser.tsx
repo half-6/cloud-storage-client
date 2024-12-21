@@ -48,6 +48,7 @@ import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import ContentPasteOutlinedIcon from "@mui/icons-material/ContentPasteOutlined";
 import ContentCutOutlinedIcon from "@mui/icons-material/ContentCutOutlined";
 import { NewFolderDialog } from "./NewFolderDialog";
+import Logger from "electron-log/renderer";
 
 export interface ActionObject {
   action: "cut" | "copy";
@@ -63,7 +64,7 @@ interface CustomGridToolbarProps extends GridToolbarProps {
   onUploadFile: () => Promise<void>;
   onUploadFolder: () => Promise<void>;
   fileList: FileInfo[];
-  actionObject: ActionObject;
+  showPaste: boolean;
 }
 function CustomDataGridToolbar(props: CustomGridToolbarProps) {
   const [newMenuAnchorEl, setNewMenuAnchorEl] =
@@ -108,21 +109,23 @@ function CustomDataGridToolbar(props: CustomGridToolbarProps) {
           New
         </Button>
         <Tooltip title="Refresh files">
-          <Button
-            size="small"
-            onClick={props.onRefresh}
-            startIcon={<RefreshOutlinedIcon />}
-            disabled={!props.fileList}
-          >
-            Refresh
-          </Button>
+          <span>
+            <Button
+              size="small"
+              onClick={props.onRefresh}
+              startIcon={<RefreshOutlinedIcon />}
+              disabled={!props.fileList}
+            >
+              Refresh
+            </Button>
+          </span>
         </Tooltip>
-        <Tooltip title="Paste">
+        <Tooltip title="Paste file/folder to current bucket">
           <Button
             size="small"
             onClick={props.onPasteObject}
             startIcon={<ContentPasteOutlinedIcon />}
-            disabled={!props.actionObject}
+            disabled={!props.showPaste}
           >
             Paste
           </Button>
@@ -195,7 +198,7 @@ export interface FileBrowserProps {
   onUploadFolder: () => Promise<void>;
   onDownloadFile: (file: FileInfo) => Promise<void>;
   onDownloadFolder: (file: FileInfo) => Promise<void>;
-  onPasteObject: (actionFile: ActionObject) => Promise<void>;
+  onPasteObject: (actionObject: ActionObject) => Promise<boolean>;
 }
 
 declare module "@mui/x-data-grid" {
@@ -358,7 +361,10 @@ export const FileBrowser = (props: FileBrowserProps) => {
     setOpenNewFolderDialog(true);
   };
   const handlePasteObject = async () => {
-    await props.onPasteObject(actionObject);
+    const success = await props.onPasteObject(actionObject);
+    if (success) {
+      setActionObject(null);
+    }
   };
   const handleEditFile = async (file: FileInfo) => {
     await props.onEditFile(file);
@@ -416,7 +422,9 @@ export const FileBrowser = (props: FileBrowserProps) => {
             onUploadFile: props.onUploadFile,
             onUploadFolder: props.onUploadFolder,
             onPasteObject: handlePasteObject,
-            actionObject: actionObject,
+            showPaste:
+              actionObject?.file &&
+              actionObject?.file.storage.id === props.storage?.id,
             fileList: props.fileList,
           },
           loadingOverlay: {

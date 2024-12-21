@@ -12,6 +12,8 @@ Please find supported storage below, and we will add more
 ## Features
 - Browse, Preview, Clone, Create, Delete files/folder from cloud storage.
 - Reliably Upload and Download your files/folder to and from cloud storage.
+- Move,Copy files/folder between buckets.
+- Export files list into CSV
 
 ## Overview
 ![Alt text](example/Home.png)
