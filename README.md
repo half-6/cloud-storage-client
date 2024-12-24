@@ -15,6 +15,18 @@ Please find supported storage below, and we will add more
 - Move,Copy files/folder between buckets.
 - Export files list into CSV
 
+## Safe storage
+
+Encryption and decryption of account configuration for cloud storage on the local machine. more details
+on [ElectronJS safe storage](https://www.electronjs.org/docs/latest/api/safe-storage)
+
+- MacOS: Encryption keys are stored for your app in Keychain Access in a way that prevents other applications from
+  loading them without user override. Therefore, content is protected from other users and other apps running in the
+  same userspace.
+- Windows: Encryption keys are generated via DPAPI. As per the Windows documentation: "Typically, only a user with the
+  same logon credential as the user who encrypted the data can typically decrypt the data". Therefore, content is
+  protected from other users on the same machine, but not from other apps running in the same userspace.
+
 ## Overview
 ![Alt text](example/Home.png)
 

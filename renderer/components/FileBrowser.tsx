@@ -48,7 +48,6 @@ import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import ContentPasteOutlinedIcon from "@mui/icons-material/ContentPasteOutlined";
 import ContentCutOutlinedIcon from "@mui/icons-material/ContentCutOutlined";
 import { NewFolderDialog } from "./NewFolderDialog";
-import Logger from "electron-log/renderer";
 
 export interface ActionObject {
   action: "cut" | "copy";
@@ -121,23 +120,27 @@ function CustomDataGridToolbar(props: CustomGridToolbarProps) {
           </span>
         </Tooltip>
         <Tooltip title="Paste file/folder to current bucket">
-          <Button
-            size="small"
-            onClick={props.onPasteObject}
-            startIcon={<ContentPasteOutlinedIcon />}
-            disabled={!props.showPaste}
-          >
-            Paste
-          </Button>
+          <span>
+            <Button
+              size="small"
+              onClick={props.onPasteObject}
+              startIcon={<ContentPasteOutlinedIcon />}
+              disabled={!props.showPaste}
+            >
+              Paste
+            </Button>
+          </span>
         </Tooltip>
         <Tooltip title="Cancel requests">
-          <Button
-            size="small"
-            onClick={props.onAbout}
-            startIcon={<BlockIcon />}
-          >
-            Cancel
-          </Button>
+          <span>
+            <Button
+              size="small"
+              onClick={props.onAbout}
+              startIcon={<BlockIcon />}
+            >
+              Cancel
+            </Button>
+          </span>
         </Tooltip>
         <GridToolbarExport disabled={!props.fileList} />
       </Box>

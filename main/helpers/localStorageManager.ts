@@ -1,17 +1,35 @@
 import { LocalStorageInfo } from "#types";
 import Store from "electron-store";
 import { log } from "#utility";
-const StoreKey = "electron-cloud-storage-client-config";
-const StoreFile = "electron-cloud-storage-client-config";
+import { safeStorage } from "electron";
+
+const StoreKey = "accounts";
+const StoreFile = "storage-config";
 const store = new Store({ name: StoreFile });
 
 export function writeLocalStorage(config: LocalStorageInfo) {
-  log.info("writeLocalStorage", JSON.stringify(config));
-  store.set(StoreKey, config);
+  store.set(StoreKey, encrypt(JSON.stringify(config)));
 }
 
 export function readLocalStorage() {
-  const config = store.get(StoreKey) as LocalStorageInfo;
-  log.info("readLocalStorage", JSON.stringify(config));
-  return config;
+  const encryptedConfig = store.get(StoreKey) as string;
+  try {
+    return JSON.parse(decrypt(encryptedConfig)) as LocalStorageInfo;
+  } catch (e) {
+    log.error("readLocalStorage failed", e);
+    return null;
+  }
+}
+
+export function encrypt(plainText: string) {
+  if (safeStorage.isEncryptionAvailable()) {
+    return safeStorage.encryptString(plainText).toString("base64");
+  }
+}
+
+export function decrypt(plainText: string) {
+  if (safeStorage.isEncryptionAvailable()) {
+    return safeStorage.decryptString(Buffer.from(plainText, "base64"));
+  }
+  return plainText;
 }

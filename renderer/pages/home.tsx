@@ -31,7 +31,6 @@ import {
 import { useAlertStore, useSystemStore } from "../store";
 import useSWR from "swr";
 import { useSnackbar } from "notistack";
-import Logger from "electron-log/renderer";
 
 const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
   open?: boolean;
