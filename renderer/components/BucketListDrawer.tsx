@@ -4,10 +4,6 @@ import {
   Divider,
   Drawer,
   IconButton,
-  ListItemIcon,
-  ListItemText,
-  Menu,
-  MenuItem,
   styled,
 } from "@mui/material";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
@@ -15,8 +11,6 @@ import React, { useEffect, useState } from "react";
 import { useAlertStore, useSystemStore } from "../store";
 import { BucketInfo, JobInfo, StorageInfo } from "#types";
 import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
-import CloudOutlinedIcon from "@mui/icons-material/CloudOutlined";
-import CreateNewFolderOutlinedIcon from "@mui/icons-material/CreateNewFolderOutlined";
 import { StoragePanel } from "./StoragePanel";
 import { BucketDialog } from "./BucketDialog";
 import { AccountListNav } from "./BucketListNav";

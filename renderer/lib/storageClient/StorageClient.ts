@@ -3,7 +3,6 @@ import {
   FileDetailInfo,
   FileInfo,
   JobDownloadInfo,
-  JobProgressInfo,
   StorageInfo,
 } from "#types";
 

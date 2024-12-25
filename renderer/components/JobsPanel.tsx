@@ -7,7 +7,6 @@ import {
   IconButton,
   List,
   ListItem,
-  ListItemButton,
   ListItemIcon,
   ListItemText,
   ListSubheader,
@@ -25,13 +24,8 @@ import PauseCircleOutlineOutlinedIcon from "@mui/icons-material/PauseCircleOutli
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
-import StopIcon from "@mui/icons-material/Stop";
-import PlayIcon from "@mui/icons-material/PlayArrow";
 import { getFileFullPath } from "#utility";
-import { TreeItemInfo } from "./BucketListDrawer";
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
-import DownloadIcon from "@mui/icons-material/Download";
-import UploadIcon from "@mui/icons-material/Upload";
 
 function CircularProgressWithLabel(
   props: CircularProgressProps & { value: number },

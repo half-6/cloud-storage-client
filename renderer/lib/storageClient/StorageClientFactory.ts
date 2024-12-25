@@ -1,9 +1,4 @@
-import {
-  AWSS3StorageInfo,
-  GoogleStorageInfo,
-  StorageInfo,
-  StorageType,
-} from "#types";
+import { StorageInfo } from "#types";
 import { StorageClient } from "./StorageClient";
 
 export class StorageClientFactory {

@@ -1,6 +1,5 @@
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -10,10 +9,10 @@ import {
   Select,
   TextField,
 } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Typography from "@mui/material/Typography";
 import { useForm } from "react-hook-form";
-import { BucketInfo, RegionInfoList, StorageInfo, StorageType } from "#types";
+import { BucketInfo, RegionInfoList, StorageInfo } from "#types";
 
 interface AWSS3BucketFormProps {
   storage: StorageInfo;

@@ -2,7 +2,6 @@ import {
   FileFormatType,
   FileInfo,
   FileTypeIconMapping,
-  FolderFileType,
   StorageInfo,
 } from "#types";
 import {
@@ -32,7 +31,7 @@ import OpenIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-import React, { useRef, useState } from "react";
+import React, { useState } from "react";
 import { formatFileSize } from "../lib";
 import { IconLabel } from "./IconLabel";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";

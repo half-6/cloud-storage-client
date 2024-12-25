@@ -7,7 +7,7 @@ import {
   replaceFromEnd,
   useSWRAbort,
 } from "../lib";
-import { StorageClient, StorageClientFactory } from "#storageClient";
+import { StorageClientFactory } from "#storageClient";
 import {
   BucketInfo,
   FileFormatType,

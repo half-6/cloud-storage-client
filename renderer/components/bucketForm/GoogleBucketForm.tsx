@@ -1,25 +1,14 @@
 import {
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Select,
   TextField,
 } from "@mui/material";
 import React, { useEffect, useState } from "react";
 import Typography from "@mui/material/Typography";
 import { useForm } from "react-hook-form";
-import {
-  BucketInfo,
-  GoogleBucketInfo,
-  RegionInfoList,
-  StorageInfo,
-  StorageType,
-} from "#types";
+import { BucketInfo, GoogleBucketInfo, StorageInfo } from "#types";
 
 interface GoogleBucketFormProps {
   storage: StorageInfo;
