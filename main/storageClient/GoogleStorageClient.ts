@@ -1,27 +1,17 @@
 import {
   BucketInfo,
   FileDetailInfo,
-  FileFormatType,
   FileInfo,
-  FileTypeInfo,
   FolderFileType,
   GoogleBucketInfo,
   GoogleStorageInfo,
   JobDownloadInfo,
   JobProgressInfo,
-  S3PermissionInfo,
   getFileTypeByFileName,
 } from "#types";
 import { StorageClient } from "./StorageClient";
-import { Storage, TransferManager } from "@google-cloud/storage";
-import {
-  deepClone,
-  getFileMime,
-  getFileName,
-  getPercentage,
-  promiseAllInBatches,
-  replaceFromEnd,
-} from "#utility";
+import { Storage } from "@google-cloud/storage";
+import { getFileMime, getFileName, getPercentage } from "#utility";
 import fs from "fs";
 
 export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
@@ -123,7 +113,7 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
         lastModify: new Date(file.metadata.updated),
       } as FileInfo;
     });
-    apiResponse.prefixes?.forEach((folder) => {
+    apiResponse?.prefixes?.forEach((folder) => {
       if (!list.some((file) => file.path === folder)) {
         list.push({
           name: getFileName(folder),
@@ -204,7 +194,7 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
     return fileDetail;
   }
 
-  async hasObject(file: FileInfo): Promise<boolean> {
+  async hasFile(file: FileInfo): Promise<boolean> {
     const [res] = await this.client
       .bucket(file.bucket.name)
       .file(file.path)

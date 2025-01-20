@@ -38,7 +38,10 @@ export function chunkArray(a: any[], n: number) {
   );
 }
 
-export async function promiseAllInBatches(promises: any[], batchSize: number) {
+export async function promiseAllInBatches(
+  promises: any[],
+  batchSize: number = 10,
+) {
   const res = [];
   for (let i = 0; i < promises.length; i += batchSize) {
     const batch = promises.slice(i, i + batchSize);

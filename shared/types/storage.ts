@@ -65,4 +65,14 @@ export interface TagInfo {
   value: string;
 }
 
+export interface UploadInfo {
+  file: FileInfo;
+  localFilePath: string;
+}
+
+export interface DownloadInfo {
+  file: FileInfo;
+  localFilePath: string;
+}
+
 export const RegionInfoList = Object.values(BucketLocationConstraint);

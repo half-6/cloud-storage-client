@@ -1,4 +1,5 @@
 import { IpcRendererEvent, contextBridge, ipcRenderer } from "electron";
+import { FileInfo } from "#types";
 
 const handler = {
   send(channel: string, value: unknown) {
@@ -15,6 +16,8 @@ const handler = {
       ipcRenderer.removeListener(channel, subscription);
     };
   },
+  startDrag: (file: FileInfo, svg: string) =>
+    ipcRenderer.send("ondragstart", file, svg),
 };
 contextBridge.exposeInMainWorld("ipc", handler);
 export type IpcHandler = typeof handler;

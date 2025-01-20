@@ -1,5 +1,5 @@
 import { ipcMain } from "electron";
-import { BucketInfo, FileInfo, JobInfo, StorageInfo } from "#types";
+import { BucketInfo, FileInfo, JobInfo, StorageInfo, UploadInfo } from "#types";
 import { StorageClientFactory, download, upload } from "../storageClient";
 
 //region bucket
@@ -84,9 +84,9 @@ ipcMain.handle(
 );
 
 ipcMain.handle(
-  "upload-file",
-  async (event, file: FileInfo, localFilePath: string) => {
-    await upload(file, localFilePath, (job: JobInfo) => {
+  "upload-objects",
+  async (event, uploadFileList: UploadInfo[]) => {
+    await upload(uploadFileList, (job: JobInfo) => {
       event.sender.send("file-progress", {
         job,
       });
@@ -101,7 +101,7 @@ ipcMain.handle("download-file", async (event, file: FileInfo) => {
 });
 
 ipcMain.handle(
-  "download-file-in-chunks",
+  "download-object",
   async (event, file: FileInfo, localFilePath: string) => {
     await download(file, localFilePath, (job: JobInfo) => {
       event.sender.send("file-progress", {

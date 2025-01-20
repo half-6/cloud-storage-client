@@ -1,5 +1,5 @@
 import path from "path";
-import { app, dialog, ipcMain, shell } from "electron";
+import { app } from "electron";
 import serve from "electron-serve";
 import { createWindow } from "./helpers";
 import { autoUpdater } from "electron-updater";

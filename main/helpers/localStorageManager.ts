@@ -2,9 +2,9 @@ import { LocalStorageInfo } from "#types";
 import Store from "electron-store";
 import { log } from "#utility";
 import { safeStorage } from "electron";
-
+import { app } from "electron";
 const StoreKey = "accounts";
-const StoreFile = "storage-config";
+const StoreFile = `storage-config${app.isPackaged ? "" : "-dev"}`;
 const store = new Store({ name: StoreFile });
 
 export function writeLocalStorage(config: LocalStorageInfo) {

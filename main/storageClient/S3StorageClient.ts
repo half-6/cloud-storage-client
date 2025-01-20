@@ -2,7 +2,6 @@ import {
   AWSS3StorageInfo,
   BucketInfo,
   FileDetailInfo,
-  FileFormatType,
   FileInfo,
   FolderFileType,
   JobDownloadInfo,
@@ -21,7 +20,6 @@ import {
   CreateBucketCommand,
   DeleteBucketCommand,
   DeleteObjectCommand,
-  DeleteObjectsCommand,
   GetObjectAclCommand,
   GetObjectCommand,
   GetObjectTaggingCommand,
@@ -32,17 +30,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import {
-  asyncFilter,
-  chunkArray,
-  convertFileToBuffer,
-  deepClone,
-  getFileMime,
-  getFileName,
-  getPercentage,
-  promiseAllInBatches,
-  replaceFromEnd,
-} from "#utility";
+import { asyncFilter, getFileMime, getFileName, getPercentage } from "#utility";
 import { Upload } from "@aws-sdk/lib-storage";
 import fs from "fs";
 import { buildCloudPath } from "./";
@@ -252,7 +240,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
     return fileDetail;
   }
 
-  async hasObject(file: FileInfo): Promise<boolean> {
+  async hasFile(file: FileInfo): Promise<boolean> {
     try {
       await this.headObject(file);
       return true;
@@ -308,7 +296,7 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
       CopySource: buildCloudPath(file.bucket.name, file.path),
       Key: destinationFile.path,
     });
-    return await this.client.send(command);
+    await this.client.send(command);
   }
 
   async getObject(file: FileInfo, start?: number, end?: number) {

@@ -4,10 +4,12 @@ import {
   getFileFullPath,
   getFileName,
   getNoneDuplicatedCloneFileName,
+  log,
+  promiseAllInBatches,
   replaceFromEnd,
   useSWRAbort,
 } from "../lib";
-import { StorageClientFactory } from "#storageClient";
+import { StorageClient, StorageClientFactory } from "#storageClient";
 import {
   BucketInfo,
   FileFormatType,
@@ -15,7 +17,7 @@ import {
   FolderFileType,
   JobInfo,
   StorageInfo,
-  UnknownFileType,
+  UploadInfo,
 } from "#types";
 import {
   ActionObject,
@@ -198,17 +200,32 @@ export default function HomePage() {
     });
   }
 
-  async function handleRenameObject(file, newFileName) {
-    const newFilePath = replaceFromEnd(file.path, file.name, newFileName);
-    await StorageClientFactory.createClient(selectedStorage).move(file, {
-      ...file,
-      name: newFileName,
-      path: newFilePath,
-    } as FileInfo);
+  async function handleMoveObject(file: FileInfo, newFile: FileInfo) {
+    await StorageClientFactory.createClient(selectedStorage).move(
+      file,
+      newFile,
+    );
     await reloadFiles();
-    enqueueSnackbar(`Rename ${newFileName} success`, {
+    enqueueSnackbar(`Move ${newFile.name} success`, {
       variant: "success",
     });
+  }
+
+  async function handleRenameObject(file: FileInfo, newFile: FileInfo) {
+    await StorageClientFactory.createClient(selectedStorage).move(
+      file,
+      newFile,
+    );
+    await reloadFiles();
+    enqueueSnackbar(`Rename ${newFile.name} success`, {
+      variant: "success",
+    });
+  }
+
+  async function handleHasObject(file: FileInfo) {
+    return await StorageClientFactory.createClient(selectedStorage).hasObject(
+      file,
+    );
   }
 
   async function handlePasteObject(actionObject: ActionObject) {
@@ -272,74 +289,72 @@ export default function HomePage() {
     return true;
   }
 
-  async function handleUploadFolder() {
-    const filePaths = await window.dialog.showOpenDialog("", ["openDirectory"]);
-    if (!filePaths) return;
-    const filePath = filePaths[0];
-    const fileName = getFileName(filePath);
-    const uploadFilePath = prefix ? `${prefix}${fileName}/` : `${fileName}/`;
-    const client = StorageClientFactory.createClient(selectedStorage);
-    const exists = await client.hasObject({
-      storage: selectedStorage,
-      bucket: selectedBucket,
-      name: fileName,
-      path: uploadFilePath,
-    } as FileInfo);
-    if (exists) {
-      const overwrite = await openConfirmAsync({
-        body: `The destination already have a folder named ${fileName}, Do you want to replace it?`,
-      });
-      if (!overwrite) {
-        return;
+  async function handleUploadObjects(
+    localFilePaths: string[],
+    parentFile?: FileInfo,
+  ) {
+    const uploadFileList: UploadInfo[] = [];
+    for (const localFilePath of localFilePaths) {
+      const isDir = await window.localFile.isDirectory(localFilePath);
+      const fileName = getFileName(localFilePath);
+      const delimiter = isDir ? StorageClient.defaultDelimiter : "";
+      if (!parentFile) {
+        const uploadFilePath = prefix
+          ? `${prefix}${fileName}${delimiter}`
+          : `${fileName}${delimiter}`;
+        uploadFileList.push({
+          file: {
+            storage: selectedStorage,
+            bucket: selectedBucket,
+            name: fileName,
+            path: uploadFilePath,
+            type: isDir ? FolderFileType : undefined,
+          } as FileInfo,
+          localFilePath,
+        });
+      } else {
+        const uploadFilePath = `${parentFile.path}${fileName}${delimiter}`;
+        uploadFileList.push({
+          file: {
+            storage: parentFile.storage,
+            bucket: parentFile.bucket,
+            name: fileName,
+            path: uploadFilePath,
+            type: isDir ? FolderFileType : undefined,
+          } as FileInfo,
+          localFilePath,
+        });
       }
     }
-    await client.uploadFile(
-      {
-        storage: selectedStorage,
-        bucket: selectedBucket,
-        path: uploadFilePath,
-        name: fileName,
-        type: FolderFileType,
-      } as FileInfo,
-      filePath,
-    );
-    //it has delay on google cloud after upload
-    setTimeout(async () => {
-      await reloadFiles();
-    }, 500);
+    await upload(uploadFileList);
   }
 
-  async function handleUploadFile() {
-    const filePaths = await window.dialog.showOpenDialog("", ["openFile"]);
-    if (!filePaths) return;
-    const filePath = filePaths[0];
-    const fileName = getFileName(filePath);
-    const uploadFilePath = prefix ? `${prefix}${fileName}` : fileName;
+  async function upload(uploadFileList: UploadInfo[]) {
     const client = StorageClientFactory.createClient(selectedStorage);
-    const exists = await client.hasObject({
-      storage: selectedStorage,
-      bucket: selectedBucket,
-      name: fileName,
-      path: uploadFilePath,
-    } as FileInfo);
-    if (exists) {
+    const existsRequest = uploadFileList.map(async (m) => {
+      const hasObject = await client.hasObject(m.file);
+      log.log("hasObject", m.file.path, hasObject);
+      return {
+        hasObject,
+        file: m.file,
+      };
+    });
+    const exists = (await promiseAllInBatches(existsRequest)).filter(
+      (m) => m.value.hasObject,
+    );
+    if (exists.length > 0) {
+      const warningMessage =
+        exists.length === 1
+          ? `The destination already have a file/folder named "${exists[0].value.file.name}", Do you want to replace it?`
+          : `The destination already have ${exists.length} files/folders with same names, Do you want to replace it?`;
       const overwrite = await openConfirmAsync({
-        body: `The destination already have a file named ${fileName}, Do you want to replace it?`,
+        body: warningMessage,
       });
       if (!overwrite) {
         return;
       }
     }
-    await client.uploadFile(
-      {
-        storage: selectedStorage,
-        bucket: selectedBucket,
-        path: uploadFilePath,
-        name: fileName,
-        type: UnknownFileType,
-      } as FileInfo,
-      filePath,
-    );
+    await client.uploadObjects(uploadFileList);
     //it has delay on google cloud after upload
     setTimeout(async () => {
       await reloadFiles();
@@ -349,9 +364,10 @@ export default function HomePage() {
   async function handleDownloadFile(file: FileInfo) {
     const localFilePath = await window.dialog.showSaveDialog(file.name);
     if (localFilePath) {
-      await StorageClientFactory.createClient(
-        selectedStorage,
-      ).downloadFileInChunks(file, localFilePath);
+      await StorageClientFactory.createClient(selectedStorage).downloadObject(
+        file,
+        localFilePath,
+      );
     }
   }
 
@@ -361,9 +377,10 @@ export default function HomePage() {
       "showOverwriteConfirmation",
     ]);
     if (localFilePath) {
-      await StorageClientFactory.createClient(
-        selectedStorage,
-      ).downloadFileInChunks(file, localFilePath);
+      await StorageClientFactory.createClient(selectedStorage).downloadObject(
+        file,
+        localFilePath,
+      );
     }
   }
 
@@ -440,9 +457,10 @@ export default function HomePage() {
           onDeleteFile={handleDeleteObject}
           onCloneFile={handleCloneObject}
           onRefresh={handleRefreshList}
+          onMoveFile={handleMoveObject}
           onRenameFile={handleRenameObject}
-          onUploadFile={handleUploadFile}
-          onUploadFolder={handleUploadFolder}
+          hasObject={handleHasObject}
+          onUploadObjects={handleUploadObjects}
           onPasteObject={handlePasteObject}
           onDownloadFile={handleDownloadFile}
           onDownloadFolder={handleDownloadFolder}

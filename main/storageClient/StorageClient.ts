@@ -127,10 +127,7 @@ export abstract class StorageClient<T extends StorageInfo> {
     }
   }
 
-  abstract async copyObject(
-    file: FileInfo,
-    destinationFile: FileInfo,
-  ): Promise<void>;
+  abstract copyObject(file: FileInfo, destinationFile: FileInfo): Promise<void>;
 
   abstract getFile(file: FileInfo): Promise<FileDetailInfo>;
 
@@ -175,5 +172,14 @@ export abstract class StorageClient<T extends StorageInfo> {
 
   abstract headObject(file: FileInfo): Promise<FileDetailInfo>;
 
-  abstract hasObject(file: FileInfo): Promise<boolean>;
+  abstract hasFile(file: FileInfo): Promise<boolean>;
+
+  async hasFolder(file: FileInfo): Promise<boolean> {
+    const files = await this.getTop1000Files(file.bucket, file.path);
+    return files.list.length > 0;
+  }
+
+  async hasObject(file: FileInfo): Promise<boolean> {
+    return (await this.hasFile(file)) || (await this.hasFolder(file));
+  }
 }

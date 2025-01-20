@@ -6,14 +6,33 @@ import {
   JobProgressInfo,
   JobStatusInfo,
   JobTypeInfo,
+  UploadInfo,
 } from "#types";
 import { v4 } from "uuid";
 import fs from "fs";
 import { StorageClientFactory } from "./StorageClientFactory";
 import path from "path";
-import { getFileName, getPercentage } from "#utility";
+import { getFileName, getPercentage, log } from "#utility";
 import { WriteStream } from "node:fs";
 import { buildCloudPath } from "./Util";
+
+const jobs: JobInfo[] = [];
+let currentJob: JobInfo = undefined;
+
+async function startJob(progress: (job: JobInfo) => void) {
+  while (!currentJob && jobs.length > 0) {
+    currentJob = jobs.pop();
+    switch (currentJob.type) {
+      case JobTypeInfo.upload:
+        await uploadObject(currentJob, progress);
+        break;
+      case JobTypeInfo.download:
+        await downloadObject(currentJob, progress);
+        break;
+    }
+    currentJob = undefined;
+  }
+}
 
 export async function download(
   file: FileInfo,
@@ -34,7 +53,14 @@ export async function download(
     file: file,
     localFilePath: localFilePath,
   } as JobInfo;
+  jobs.push(job);
+  progress(job);
+  await startJob(progress);
+}
 
+async function downloadObject(job: JobInfo, progress: (job: JobInfo) => void) {
+  const file = job.file;
+  const localFilePath = job.localFilePath;
   if (file.type.fileType === FileFormatType.Folder) {
     const client = StorageClientFactory.createClient(file.storage);
     const allFiles = await client.getFilesRecursively(file.bucket, file.path);
@@ -167,25 +193,42 @@ function getFilesRecursively(
 }
 
 export async function upload(
-  file: FileInfo,
-  localFilePath: string,
+  uploadFileList: UploadInfo[],
   progress: (job: JobInfo) => void,
 ) {
-  const job = {
-    id: v4().toString(),
-    name: file.name,
-    status: JobStatusInfo.loading,
-    progress: {
-      loaded: -1,
-      total: 0,
-      percentage: 0,
-    } as JobProgressInfo,
-    createdTime: new Date(),
-    type: JobTypeInfo.upload,
-    file: file,
-    localFilePath: localFilePath,
-  } as JobInfo;
-  if (file.type.fileType === FileFormatType.Folder) {
+  log.log(
+    "upload",
+    uploadFileList.map((x) => x.localFilePath),
+  );
+  for (const uploadFile of uploadFileList) {
+    const isDir = fs.statSync(uploadFile.localFilePath).isDirectory();
+    if (isDir) {
+      uploadFile.file.type = FolderFileType;
+    }
+    const job = {
+      id: v4().toString(),
+      name: uploadFile.file.name,
+      status: JobStatusInfo.loading,
+      progress: {
+        loaded: -1,
+        total: 0,
+        percentage: 0,
+      } as JobProgressInfo,
+      createdTime: new Date(),
+      type: JobTypeInfo.upload,
+      file: uploadFile.file,
+      localFilePath: uploadFile.localFilePath,
+    } as JobInfo;
+    jobs.push(job);
+    progress(job);
+  }
+  await startJob(progress);
+}
+
+async function uploadObject(job: JobInfo, progress: (job: JobInfo) => void) {
+  const file = job.file;
+  const localFilePath = job.localFilePath;
+  if (file.type?.fileType === FileFormatType.Folder) {
     const files = getFilesRecursively(localFilePath);
     job.progress.loaded = 0;
     if (files.length === 0) {

@@ -4,6 +4,7 @@ import {
   FileInfo,
   JobDownloadInfo,
   StorageInfo,
+  UploadInfo,
 } from "#types";
 
 export class StorageClient<T extends StorageInfo> {
@@ -92,8 +93,8 @@ export class StorageClient<T extends StorageInfo> {
     return this.getFiles(bucket, parentPath, signal, progress, "");
   }
 
-  async uploadFile(file: FileInfo, localFilePath: string): Promise<void> {
-    await window.ipc.invoke("upload-file", file, localFilePath);
+  async uploadObjects(uploadFileList: UploadInfo[]): Promise<void> {
+    await window.ipc.invoke("upload-objects", uploadFileList);
   }
 
   //folder operation
@@ -113,15 +114,11 @@ export class StorageClient<T extends StorageInfo> {
     return await window.ipc.invoke("download-file", file);
   }
 
-  async downloadFileInChunks(
+  async downloadObject(
     file: FileInfo,
     localFilePath: string,
   ): Promise<JobDownloadInfo> {
-    return await window.ipc.invoke(
-      "download-file-in-chunks",
-      file,
-      localFilePath,
-    );
+    return await window.ipc.invoke("download-object", file, localFilePath);
   }
 
   async move(file: FileInfo, destinationFile: FileInfo): Promise<void> {

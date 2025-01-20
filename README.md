@@ -14,6 +14,7 @@ Please find supported storage below, and we will add more
 - Reliably Upload and Download your files/folder to and from cloud storage.
 - Move,Copy files/folder between buckets.
 - Export files list into CSV
+- Drag and drop support for move and upload files/folder
 
 ## Safe storage
 

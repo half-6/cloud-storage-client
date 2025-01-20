@@ -26,13 +26,14 @@ import {
   Paper,
   Tooltip,
   styled,
+  useColorScheme,
 } from "@mui/material";
 import OpenIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 import React, { useState } from "react";
-import { formatFileSize } from "../lib";
+import { formatFileSize, log, replaceFromEnd } from "../lib";
 import { IconLabel } from "./IconLabel";
 import RefreshOutlinedIcon from "@mui/icons-material/RefreshOutlined";
 import { useAlertStore } from "../store";
@@ -59,8 +60,10 @@ interface CustomGridToolbarProps extends GridToolbarProps {
   onNewFolder: () => void;
   onNewFile: () => void;
   onPasteObject: () => void;
-  onUploadFile: () => Promise<void>;
-  onUploadFolder: () => Promise<void>;
+  onUploadObjects: (
+    filePaths: string[],
+    parentFile?: FileInfo,
+  ) => Promise<void>;
   fileList: FileInfo[];
   showPaste: boolean;
 }
@@ -81,11 +84,18 @@ function CustomDataGridToolbar(props: CustomGridToolbarProps) {
   };
   const handleUploadFile = async () => {
     handleCloseMenu();
-    await props.onUploadFile();
+    const filePaths = await window.dialog.showOpenDialog("", [
+      "openFile",
+      "multiSelections",
+    ]);
+    if (!filePaths) return;
+    await props.onUploadObjects(filePaths);
   };
   const handleUploadFolder = async () => {
     handleCloseMenu();
-    await props.onUploadFolder();
+    const filePaths = await window.dialog.showOpenDialog("", ["openDirectory"]);
+    if (!filePaths) return;
+    await props.onUploadObjects(filePaths);
   };
   return (
     <GridToolbarContainer
@@ -193,11 +203,15 @@ export interface FileBrowserProps {
   onEditFile: (file: FileInfo) => void;
   onDeleteFile: (file: FileInfo) => void;
   onCloneFile: (file: FileInfo) => void;
-  onRenameFile: (file: FileInfo, newFileName: string) => Promise<void>;
+  onMoveFile: (file: FileInfo, newFile: FileInfo) => Promise<void>;
+  onRenameFile: (file: FileInfo, newFile: FileInfo) => Promise<void>;
+  hasObject: (file: FileInfo) => Promise<boolean>;
   onRefresh: () => void;
   onAbout: () => void;
-  onUploadFile: () => Promise<void>;
-  onUploadFolder: () => Promise<void>;
+  onUploadObjects: (
+    filePaths: string[],
+    parentFile?: FileInfo,
+  ) => Promise<void>;
   onDownloadFile: (file: FileInfo) => Promise<void>;
   onDownloadFolder: (file: FileInfo) => Promise<void>;
   onPasteObject: (actionObject: ActionObject) => Promise<boolean>;
@@ -209,8 +223,13 @@ declare module "@mui/x-data-grid" {
     onRefresh: () => void;
     onNewFolder: () => void;
     onNewFile: () => void;
-    onUploadFile: (file: File) => Promise<void>;
+    onUploadObjects: (
+      filePaths: string[],
+      parentFile?: FileInfo,
+    ) => Promise<void>;
     fileList: FileInfo[];
+    showPaste: boolean;
+    onPasteObject: () => Promise<void>;
   }
   interface LoadingOverlayPropsOverrides {
     numberOfLoaded: number;
@@ -247,6 +266,7 @@ export const FileBrowser = (props: FileBrowserProps) => {
   const [actionObject, setActionObject] = useState<ActionObject>();
   const { openConfirmAsync, openAlertAsync } = useAlertStore();
   const [openRenameDialog, setOpenRenameDialog] = useState<boolean>(false);
+  const { mode } = useColorScheme();
   const [openNewFolderDialog, setOpenNewFolderDialog] =
     useState<boolean>(false);
   const apiRef = useGridApiRef();
@@ -260,7 +280,80 @@ export const FileBrowser = (props: FileBrowserProps) => {
       renderCell: (params) => {
         const file = params.row as FileInfo;
         const FileTypeIcon = FileTypeIconMapping[file.type.fileType];
-        return <IconLabel icon={<FileTypeIcon />} label={params.value} />;
+        return (
+          <IconLabel
+            icon={<FileTypeIcon />}
+            draggable={true}
+            label={params.value}
+            onDrop={async (event) => {
+              event.currentTarget.parentElement.style.border = "none";
+              event.currentTarget.parentElement.style.borderTop =
+                "1px solid var(--rowBorderColor)";
+              event.preventDefault();
+              event.stopPropagation();
+              if (event.dataTransfer.files.length > 0) {
+                const filePaths = [];
+                for (const file of event.dataTransfer.files) {
+                  filePaths.push(file.path);
+                }
+                log.log("UPLOAD", filePaths);
+                if (file.type.fileType === FileFormatType.Folder) {
+                  await props.onUploadObjects(filePaths, file);
+                } else {
+                  await props.onUploadObjects(filePaths);
+                }
+                return;
+              }
+              const dataTransfer = event.dataTransfer.getData("file");
+              if (dataTransfer) {
+                const remoteFile = JSON.parse(dataTransfer) as FileInfo;
+                if (remoteFile.path === file.path) {
+                  //can't drag to himself
+                  return;
+                }
+                const ok = await openConfirmAsync({
+                  body: `Do want to move "${remoteFile.name}" to "${file.path}${remoteFile.name}"? it will be replaced if the same name in the destination`,
+                });
+                if (ok) {
+                  const newFilePath = `${file.path}${remoteFile.name}${remoteFile.type.fileType === FileFormatType.Folder ? "/" : ""}`;
+                  const newFile = {
+                    ...remoteFile,
+                    path: newFilePath,
+                  } as FileInfo;
+                  await props.onMoveFile(remoteFile, newFile);
+                }
+              }
+            }}
+            onDragOver={(event) => {
+              if (file.type.fileType === FileFormatType.Folder) {
+                if (mode === "dark") {
+                  //dark
+                  event.currentTarget.parentElement.style.border =
+                    "solid #90caf9 1px";
+                } else {
+                  //light
+                  event.currentTarget.parentElement.style.border =
+                    "1px #1976d2 solid";
+                }
+                event.preventDefault();
+                event.stopPropagation();
+              }
+            }}
+            onDragLeave={(event) => {
+              event.currentTarget.parentElement.style.border = "none";
+              event.currentTarget.parentElement.style.borderTop =
+                "1px solid var(--rowBorderColor)";
+            }}
+            onDragStart={async (event) => {
+              event.dataTransfer.setData("file", JSON.stringify(file));
+              event.dataTransfer.effectAllowed = "move";
+              //event.dataTransfer.setDragImage()
+              //event.preventDefault();
+              //log.log("drag start 222222222222", iconPath);
+              //window.ipc.startDrag(file, svg);
+            }}
+          />
+        );
       },
     },
     {
@@ -398,7 +491,41 @@ export const FileBrowser = (props: FileBrowserProps) => {
     await props.onRefresh();
   };
   return (
-    <Paper sx={{ width: "100%", position: "relative" }}>
+    <Paper
+      sx={{ width: "100%", position: "relative" }}
+      onDrop={async (event) => {
+        event.currentTarget.parentElement.style.border = "none";
+        event.preventDefault();
+        if (event.dataTransfer.files.length > 0) {
+          const filePaths = [];
+          for (const file of event.dataTransfer.files) {
+            filePaths.push(file.path);
+          }
+          log.log("UPLOAD", filePaths);
+          await props.onUploadObjects(filePaths);
+        }
+      }}
+      onDragOver={(event) => {
+        if (
+          event.dataTransfer.items.length > 0 &&
+          event.dataTransfer.items[0].kind === "file"
+        ) {
+          if (mode === "dark") {
+            //dark
+            event.currentTarget.parentElement.style.border =
+              "solid #90caf9 1px";
+          } else {
+            //light
+            event.currentTarget.parentElement.style.border =
+              "1px #1976d2 solid";
+          }
+          event.preventDefault();
+        }
+      }}
+      onDragLeave={(event) => {
+        event.currentTarget.parentElement.style.border = "none";
+      }}
+    >
       <DataGrid
         apiRef={apiRef}
         autoHeight={true}
@@ -419,10 +546,9 @@ export const FileBrowser = (props: FileBrowserProps) => {
           toolbar: {
             showQuickFilter: true,
             onAbout: props.onAbout,
-            onRefresh: props.onRefresh,
+            onRefresh: handleRefresh,
             onNewFolder: handleNewFolder,
-            onUploadFile: props.onUploadFile,
-            onUploadFolder: props.onUploadFolder,
+            onUploadObjects: props.onUploadObjects,
             onPasteObject: handlePasteObject,
             showPaste:
               actionObject?.file &&
@@ -443,19 +569,24 @@ export const FileBrowser = (props: FileBrowserProps) => {
         // }}
         sx={{ border: 0 }}
       />
-
       <FileRename
         file={selectedFile}
         show={openRenameDialog}
         onSave={async (file, newFileName) => {
-          const exist = props.fileList.find((f) => f.name === newFileName);
+          const newFilePath = replaceFromEnd(file.path, file.name, newFileName);
+          const newFile = {
+            ...file,
+            name: newFileName,
+            path: newFilePath,
+          } as FileInfo;
+          const exist = await props.hasObject(newFile);
           if (exist) {
             await openAlertAsync({
-              body: `There is already a file/folder with the same name in this location`,
+              body: `There is already a file/folder with the same name "${newFileName}" in this location`,
             });
           } else {
             setOpenRenameDialog(false);
-            await props.onRenameFile?.(file, newFileName);
+            await props.onRenameFile?.(file, newFile);
           }
         }}
         onCancel={async () => {
