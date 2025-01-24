@@ -1,5 +1,5 @@
 import path from "path";
-import { app } from "electron";
+import { app, shell } from "electron";
 import serve from "electron-serve";
 import { createWindow } from "./helpers";
 import { autoUpdater } from "electron-updater";
@@ -24,6 +24,12 @@ if (isProd) {
       devTools: !app.isPackaged,
     },
     icon: path.join(__dirname, "../resources/icon.png"),
+  });
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    if (details.url.startsWith("http")) {
+      shell.openExternal(details.url);
+    }
+    return { action: "deny" };
   });
   if (isProd) {
     await mainWindow.loadURL("app://./home");

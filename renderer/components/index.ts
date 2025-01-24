@@ -15,3 +15,5 @@ export * from "./TabPanel";
 export * from "./storageForm/";
 export * from "./bucketForm/";
 export * from "./HelpButton";
+export * from "./About";
+export * from "./Link";

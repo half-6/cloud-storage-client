@@ -51,6 +51,12 @@ export abstract class StorageClient<T extends StorageInfo> {
     progress?: (progress: JobProgressInfo) => void,
   ): Promise<void>;
 
+  abstract uploadString(
+    file: FileInfo,
+    content: string,
+    progress?: (progress: JobProgressInfo) => void,
+  ): Promise<void>;
+
   //folder operation
   abstract createFolder(file: FileInfo): Promise<FileInfo>;
 

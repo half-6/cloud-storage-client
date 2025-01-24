@@ -13,6 +13,7 @@ import { StorageClient } from "./StorageClient";
 import { Storage } from "@google-cloud/storage";
 import { getFileMime, getFileName, getPercentage } from "#utility";
 import fs from "fs";
+import { Readable } from "stream";
 
 export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
   client: Storage;
@@ -202,32 +203,53 @@ export class GoogleStorageClient extends StorageClient<GoogleStorageInfo> {
     return res;
   }
 
-  uploadFile(
+  async uploadFile(
     file: FileInfo,
     localFilePath: string,
-    progress: ((progress: JobProgressInfo) => void) | undefined,
+    progress?: ((progress: JobProgressInfo) => void) | undefined,
+  ) {
+    const readableStream = fs.createReadStream(localFilePath);
+    const stat = fs.statSync(localFilePath);
+    const total = stat.size;
+    await this.upload(file, readableStream, total, progress);
+    readableStream.close();
+  }
+
+  async uploadString(
+    file: FileInfo,
+    content: string,
+    progress?: ((progress: JobProgressInfo) => void) | undefined,
+  ) {
+    const readableStream = Readable.from(content);
+    const total = content.length;
+    await this.upload(file, readableStream, total, progress);
+  }
+
+  upload(
+    file: FileInfo,
+    readStream: Readable,
+    total: number,
+    progress?: ((progress: JobProgressInfo) => void) | undefined,
   ): Promise<void> {
     return new Promise((resolve, reject) => {
       const cloudFile = this.client.bucket(file.bucket.name).file(file.path);
-      const readStream = fs.createReadStream(localFilePath);
       let uploadedBytes = 0;
-      const stat = fs.statSync(localFilePath);
-      const total = stat.size;
       let percentage = 0;
       readStream.on("data", (chunk) => {
         uploadedBytes += chunk.length;
         const currentPercentage = getPercentage(uploadedBytes, total);
         if (currentPercentage > percentage) {
           percentage = currentPercentage;
-          progress({
-            loaded: uploadedBytes,
-            total: total,
-            percentage: percentage,
-          } as JobProgressInfo);
+          progress &&
+            progress({
+              loaded: uploadedBytes,
+              total: total,
+              percentage: percentage,
+            } as JobProgressInfo);
         }
       });
       readStream.on("end", () => {
-        readStream.close();
+        //readStream.close();
         resolve();
       });
       readStream.pipe(cloudFile.createWriteStream());

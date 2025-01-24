@@ -13,7 +13,7 @@ import {
   TextField,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import { FileDetailInfo } from "#types";
+import { FileDetailInfo, FileInfo } from "#types";
 import React, { useEffect } from "react";
 import { DataGrid, GridColDef } from "@mui/x-data-grid";
 import Typography from "@mui/material/Typography";
@@ -27,7 +27,7 @@ interface FilePreviewProps {
   downloadFile: FileDetailInfo;
   isDownloading: boolean;
   onDownload: (file: FileDetailInfo) => Promise<void>;
-  onSave: () => Promise<void>;
+  onSave: (file: FileInfo, content: string) => Promise<void>;
   onCancel: () => Promise<void>;
 }
 const tagColumns: GridColDef[] = [
@@ -39,8 +39,9 @@ const MAX_PREVIEW_SIZE = 1024 * 1024 * 100; //100MB
 
 export const FilePreview = (props: FilePreviewProps) => {
   const [tab, setTab] = React.useState(0);
-  const handleOK = async () => {
-    await props?.onSave();
+  const [content, setContent] = React.useState(props.downloadFile?.body || "");
+  const handleSave = async () => {
+    await props?.onSave(props.downloadFile, content);
   };
   const handleCancel = async () => {
     await props?.onCancel();
@@ -151,6 +152,9 @@ export const FilePreview = (props: FilePreviewProps) => {
               multiline
               minRows={10}
               defaultValue={props.downloadFile?.body}
+              onChange={(e) => {
+                setContent(e.currentTarget.value);
+              }}
               variant="filled"
               sx={{ display: "flex" }}
             />
@@ -202,13 +206,15 @@ export const FilePreview = (props: FilePreviewProps) => {
             hideFooter={true}
           />
         </TabPanel>
-        {/*<TabPanel value={tab} index={4}></TabPanel>*/}
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleOK}>Close</Button>
-        {/*<Button autoFocus onClick={handleCancel}>*/}
-        {/*  Cancel*/}
-        {/*</Button>*/}
+        {tab == 1 && props?.downloadFile?.isReadableContent && (
+          <Button onClick={handleSave}>Save</Button>
+        )}
+
+        <Button autoFocus onClick={handleCancel}>
+          Close
+        </Button>
       </DialogActions>
       <Backdrop
         sx={(theme) => ({ color: "#fff", zIndex: theme.zIndex.drawer + 1 })}

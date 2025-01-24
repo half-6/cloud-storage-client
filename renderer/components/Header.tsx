@@ -4,19 +4,21 @@ import {
   Chip,
   IconButton,
   Toolbar,
+  Tooltip,
   emphasize,
   styled,
   useColorScheme,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import HomeIcon from "@mui/icons-material/Home";
-import React from "react";
+import React, { useState } from "react";
 import { useSystemStore } from "../store";
 import { DrawerWidth } from "./BucketListDrawer";
 import MuiAppBar, { AppBarProps as MuiAppBarProps } from "@mui/material/AppBar";
 import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
-
+import InfoRoundedIcon from "@mui/icons-material/InfoRounded";
+import { About } from "./About";
 export interface HeaderProps {
   menus: MenuInfo[];
   onMenuClick: (menu: MenuInfo) => void;
@@ -73,6 +75,7 @@ const StyledBreadcrumb = styled(Chip)(({ theme }) => {
 
 export const Header = (props: HeaderProps) => {
   const { showDrawer, setShowDrawer } = useSystemStore();
+  const [showAbout, setShowAbout] = useState(false);
   const { mode, setMode } = useColorScheme();
 
   const handleDrawerOpen = () => {
@@ -80,6 +83,9 @@ export const Header = (props: HeaderProps) => {
   };
   const handleThemeChange = () => {
     setMode(mode === "light" ? "dark" : "light");
+  };
+  const handleAbout = () => {
+    setShowAbout(true);
   };
 
   return (
@@ -131,15 +137,28 @@ export const Header = (props: HeaderProps) => {
           })}
         </Breadcrumbs>
         <Box sx={{ flexGrow: 0 }}>
-          <IconButton onClick={handleThemeChange}>
-            {mode === "light" ? (
-              <DarkModeRoundedIcon />
-            ) : (
-              <LightModeRoundedIcon />
-            )}
-          </IconButton>
+          <Tooltip title="Change theme">
+            <IconButton onClick={handleThemeChange}>
+              {mode === "light" ? (
+                <DarkModeRoundedIcon />
+              ) : (
+                <LightModeRoundedIcon />
+              )}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="About">
+            <IconButton onClick={handleAbout}>
+              <InfoRoundedIcon />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Toolbar>
+      <About
+        open={showAbout}
+        onClose={() => {
+          setShowAbout(false);
+        }}
+      />
     </AppBar>
   );
 };

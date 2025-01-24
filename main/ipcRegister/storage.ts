@@ -94,6 +94,16 @@ ipcMain.handle(
   },
 );
 
+ipcMain.handle(
+  "upload-file-string",
+  async (event, file: FileInfo, content: string) => {
+    await StorageClientFactory.createClient(file.storage).uploadString(
+      file,
+      content,
+    );
+  },
+);
+
 ipcMain.handle("download-file", async (event, file: FileInfo) => {
   return await StorageClientFactory.createClient(file.storage).downloadFile(
     file,

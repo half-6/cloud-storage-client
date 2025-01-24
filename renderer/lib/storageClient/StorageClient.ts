@@ -97,6 +97,10 @@ export class StorageClient<T extends StorageInfo> {
     await window.ipc.invoke("upload-objects", uploadFileList);
   }
 
+  async uploadString(file: FileInfo, content: string): Promise<void> {
+    await window.ipc.invoke("upload-file-string", file, content);
+  }
+
   //folder operation
   async createFolder(file: FileInfo): Promise<FileInfo> {
     return await window.ipc.invoke("create-folder", file);

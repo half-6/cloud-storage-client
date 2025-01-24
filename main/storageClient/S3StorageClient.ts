@@ -316,9 +316,26 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
   async uploadFile(
     file: FileInfo,
     localFilePath: string,
-    progress: ((progress: JobProgressInfo) => void) | undefined,
+    progress?: ((progress: JobProgressInfo) => void) | undefined,
   ): Promise<void> {
     const fileStream = fs.readFileSync(localFilePath);
+    await this.upload(file, fileStream, progress);
+  }
+
+  async uploadString(
+    file: FileInfo,
+    content: string,
+    progress?: ((progress: JobProgressInfo) => void) | undefined,
+  ) {
+    const fileStream = Buffer.from(content, "utf8");
+    await this.upload(file, fileStream, progress);
+  }
+
+  async upload(
+    file: FileInfo,
+    fileStream: Buffer,
+    progress?: ((progress: JobProgressInfo) => void) | undefined,
+  ) {
     const fileType = await getFileMime(fileStream);
     const parallelUploads3 = new Upload({
       client: this.client,
@@ -339,11 +356,12 @@ export class S3StorageClient extends StorageClient<AWSS3StorageInfo> {
       //leavePartsOnError: false,
     });
     parallelUploads3.on("httpUploadProgress", (status) => {
-      progress({
-        loaded: status.loaded,
-        total: status.total,
-        percentage: getPercentage(status.loaded, status.total),
-      } as JobProgressInfo);
+      progress &&
+        progress({
+          loaded: status.loaded,
+          total: status.total,
+          percentage: getPercentage(status.loaded, status.total),
+        } as JobProgressInfo);
     });
     await parallelUploads3.done();
   }

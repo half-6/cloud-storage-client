@@ -106,6 +106,7 @@ export default function HomePage() {
   const {
     data: downloadFile,
     isLoading: downloadLoading,
+    mutate: reloadDownloadFile,
     error: downloadFileError,
   } = useSWR(
     selectedFile?.path &&
@@ -287,6 +288,18 @@ export default function HomePage() {
       variant: "success",
     });
     return true;
+  }
+
+  async function handleSaveFile(file: FileInfo, content: string) {
+    const client = StorageClientFactory.createClient(file.storage);
+    await client.uploadString(file, content);
+    setTimeout(async () => {
+      await reloadFiles();
+      await reloadDownloadFile();
+    }, 500);
+    enqueueSnackbar(`Save ${file.name} success`, {
+      variant: "success",
+    });
   }
 
   async function handleUploadObjects(
@@ -471,10 +484,7 @@ export default function HomePage() {
           loading={fileDetailLoading}
           isDownloading={downloadLoading}
           downloadFile={downloadFile}
-          onSave={async () => {
-            setShowFileDetail(false);
-            setIsDownloadFile(false);
-          }}
+          onSave={handleSaveFile}
           onCancel={async () => {
             setShowFileDetail(false);
             setIsDownloadFile(false);
